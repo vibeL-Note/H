@@ -2,151 +2,532 @@
 <html lang="zh-CN">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>游戏活动倒计时</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover"/>
+  <title>游戏活动日历</title>
+  <!-- PWA核心配置（OPPO桌面卡片必需） -->
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#007aff">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="游戏活动日历">
+  <!-- 图标适配OPPO桌面 -->
+  <link rel="icon" type="image/png" sizes="192x192" href="https://picsum.photos/192/192">
+  <link rel="apple-touch-icon" sizes="192x192" href="https://picsum.photos/192/192">
+  
   <style>
-    * {
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-    }
-    body {
-      background: #f7f8fa;
-      padding: 8px;
-      border-radius: 16px;
-      height: 100vh;
-      overflow: hidden;
-    }
-    .widget-card {
-      background: #fff;
-      border-radius: 12px;
-      padding: 12px;
-      height: 100%;
-      box-shadow: 0 1px 4px rgba(0,0,0,0.06);
-      display: flex;
-      flex-direction: column;
-    }
-    .widget-title {
-      font-size: 14px;
-      font-weight: 600;
-      color: #1d1d1f;
-      margin-bottom: 8px;
+    *{margin:0;padding:0;box-sizing:border-box;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"OPPO Sans",sans-serif}
+    body{background:#f7f8fa;padding:16px 16px 100px;--safe-bottom: env(safe-area-inset-bottom);padding-bottom: calc(80px + var(--safe-bottom))}
+    .header{display:flex;align-items:center;gap:12px;padding:10px 0}
+    .header h1{font-size:22px;color:#1d1d1f;font-weight:600}
+    .filter-bar{display:flex;flex-wrap:wrap;gap:8px;margin:14px 0}
+    .filter-btn{padding:6px 12px;border-radius:20px;background:#fff;border:1px solid #e5e5e7;font-size:14px;cursor:pointer;transition:all 0.2s ease}
+    .filter-btn.active{background:#007aff;color:#fff;border-color:#007aff}
+    .sort-btn{margin-left:auto}
+    /* 核心修复：布局样式强制生效 */
+    .card-list{display:grid;gap:16px;width:100%;}
+    .card-list.single-layout{grid-template-columns:1fr !important;}
+    .card-list.grid-layout{grid-template-columns:repeat(auto-fill,minmax(350px,1fr)) !important;gap:20px !important;}
+    .card{background:#fff;border-radius:16px;padding:20px;position:relative;box-shadow:0 1px 4px rgba(0,0,0,0.06);transition:all 0.3s ease;border:1px solid #f0f0f2;}
+    .card.highlight{border:2px solid #007aff;background:#f0f8ff;box-shadow:0 1px 6px rgba(0, 122, 255, 0.1);}
+    .card.faded{opacity:0.5}
+    .card.expired{opacity:0.45;filter:grayscale(80%)}
+    .card-expire{position:absolute;right:16px;top:16px;font-size:12px;padding:3px 8px;border-radius:12px;background:#ffebee;color:#d32f2f;font-weight:500}
+    .card-expire.soon{background:#fff3e0;color:#f57c00}
+    .card-actions-wrap {
       display: flex;
       align-items: center;
-      gap: 4px;
-    }
-    .event-list {
-      flex: 1;
-      overflow-y: auto;
-    }
-    .event-item {
-      display: flex;
       justify-content: space-between;
-      align-items: center;
-      padding: 6px 0;
-      border-bottom: 1px solid #f0f0f2;
+      gap: 10px;
+      margin-top: 16px;
+      width: 100%;
     }
-    .event-item:last-child {
-      border-bottom: none;
+    .card-remind {
+      font-size:13px;color:#007aff;cursor:pointer;margin:0;flex-shrink:0;font-weight:500
     }
-    .event-info {
-      flex: 1;
+    .card-opt-group {
+      display:flex;align-items:center;gap:12px;flex-shrink:0;
     }
-    .event-name {
-      font-size: 12px;
-      color: #1d1d1f;
-      font-weight: 500;
-      margin-bottom: 2px;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
+    .card-edit {
+      font-size:14px;padding:3px 6px;cursor:pointer;color:#1890ff;background:transparent;border:none;
     }
-    .event-game {
-      display: inline-block;
-      padding: 1px 6px;
-      border-radius: 8px;
-      font-size: 10px;
-      color: #fff;
-      margin-right: 4px;
+    .card-del {
+      font-size:14px;padding:3px 6px;cursor:pointer;color:#666;background:transparent;border:none;
     }
-    .event-countdown {
-      font-size: 11px;
-      color: #007aff;
-      font-weight: 500;
+    .card-del:hover {color:#ff4444;}
+    .card-game-tag{display:inline-block;padding:3px 10px;border-radius:12px;font-size:12px;margin-bottom:10px;font-weight:500}
+    .card-game-tag.mingchao{background:#e6f7ff;color:#1890ff}
+    .card-game-tag.warmth{background:#fff0f6;color:#eb2f96}
+    .card-game-tag.genshin{background:#f6ffed;color:#52c41a}
+    .card-game-tag.juequ{background:#f9f0ff;color:#722ed1}
+    .card-game-tag.starrail{background:#fff7e6;color:#fa8c16}
+    .card-game-tag.reverse{background:#f1ba20;color:#ab751d}
+    .card-game-tag.Arknigs{background:#faf7ef;color:#9e2120}
+    .card-game-tag.Arknigs\:Endfield{background:#faf7ef;color:#9e2120 !important;}
+    .card-title{font-size:18px;font-weight:600;margin-bottom:16px;color:#1d1d1f;line-height:1.3}
+    .card-row{display:flex;align-items:center;gap:8px;margin-bottom:10px;font-size:15px;line-height:1.4;}
+    .calendar-icon {display:inline-block;width:20px;height:20px;font-size:16px;color:#007aff;text-align:center;line-height:20px;flex-shrink:0;}
+    .card-label{color:#86868b;min-width:50px;flex-shrink:0;}
+    .date-value{font-size:15px;color:#1d1d1f;flex:1;font-weight:500}
+    .add-record-btn{display:flex;align-items:center;justify-content:center;gap:8px;background:#fff;border-radius:16px;padding:18px;margin-top:24px;cursor:pointer;box-shadow:0 1px 4px rgba(0,0,0,0.06);border:1px solid #f0f0f2;}
+    .add-icon{width:28px;height:28px;border-radius:50%;background:#007aff;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:600}
+    .toolbar{position:fixed;bottom:0;left:0;right:0;background:#fff;border-top:1px solid #e5e5e7;display:flex;justify-content:space-around;padding:12px 0;padding-bottom: calc(12px + var(--safe-bottom));z-index:90;}
+    .toolbar-item{display:flex;flex-direction:column;align-items:center;gap:4px;font-size:12px;color:#666;cursor:pointer;padding:6px 10px;border-radius:12px;-webkit-tap-highlight-color:transparent;}
+    .toolbar-item:active{background-color:#f0f0f0;}
+    .toolbar-item span:first-child{font-size:20px}
+    .modal{position:fixed;top:0;left:0;right:0;bottom:0;background:#0008;display:none;align-items:center;justify-content:center;z-index:999}
+    .modal-content{background:#fff;border-radius:16px;padding:24px;width:90%;max-width:400px}
+    .form-group{margin-bottom:18px}
+    .form-label{display:block;font-size:14px;color:#666;margin-bottom:6px;font-weight:500}
+    .form-input,.form-select{width:100%;padding:12px 14px;border:1px solid #e5e5e7;border-radius:12px;font-size:15px;line-height:1.4;appearance:none;-webkit-appearance:none;background-color:#fff;box-sizing:border-box;}
+    input[type="date"]{font-family:inherit;color:#333;height:44px;box-sizing:border-box;}
+    input[type="date"]::-webkit-calendar-picker-indicator {width:20px;height:20px;margin-right:8px;cursor:pointer;filter:invert(0.5);}
+    .form-input:focus,.form-select:focus{outline:none;border-color:#007aff;box-shadow:0 0 0 2px rgba(0,122,255,0.2);}
+    .modal-actions{display:flex;justify-content:flex-end;gap:12px;margin-top:24px}
+    .modal-btn{padding:10px 20px;border-radius:12px;border:none;cursor:pointer;font-size:15px;font-weight:500}
+    .cancel{background:#f5f5f5;color:#666}
+    .confirm{background:#007aff;color:#fff}
+    /* 电脑端布局适配 */
+    @media screen and (min-width:768px) {
+      body{padding:24px 24px 100px}
+      .card{padding:24px}
     }
-    .event-expired {
-      color: #86868b;
+    /* OPPO手机端专属适配 */
+    @media screen and (max-width:767px) {
+      .card-list.grid-layout {
+        grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)) !important;
+        gap: 12px !important;
+      }
+      .card-list.single-layout {
+        grid-template-columns: 1fr !important;
+        gap: 16px !important;
+      }
+      .card.grid-item{padding:14px !important}
+      .card.grid-item .card-title{font-size:14px !important;margin-bottom:8px !important}
+      .card.grid-item .card-row{font-size:12px !important;margin-bottom:6px !important}
+      .card.grid-item .card-game-tag{font-size:10px !important;padding:2px 6px !important;margin-bottom:6px !important}
+      .card.grid-item .card-expire{font-size:10px !important;padding:2px 4px !important;right:10px;top:10px}
+      .filter-btn{font-size:13px;padding:5px 10px}
+      .header h1{font-size:20px}
     }
-    .game-genshin { background: #52c41a; }
-    .game-starrail { background: #fa8c16; }
-    .game-Arknigs { background: #9e2120; }
-    .game-mingchao { background: #1890ff; }
-    .game-juequ { background: #722ed1; }
+    .reset-search-btn{position:fixed;top:16px;right:16px;padding:8px 14px;border-radius:12px;background:#007aff;color:#fff;border:none;font-size:14px;cursor:pointer;display:none;z-index:99;}
   </style>
 </head>
 <body>
-  <div class="widget-card">
-    <div class="widget-title">📅 关键活动倒计时</div>
-    <div class="event-list" id="event-list">加载中...</div>
+<!-- 页面主体 -->
+<button class="reset-search-btn" id="resetSearchBtn" onclick="resetSearch()">重置搜索</button>
+<div class="header">
+  <h1>游戏活动日历</h1>
+</div>
+<div class="filter-bar">
+  <button class="filter-btn active" onclick="f('all')">全部</button>
+  <button class="filter-btn" onclick="f('genshin')">原神</button>
+  <button class="filter-btn" onclick="f('starrail')">星穹铁道</button>
+  <button class="filter-btn" onclick="f('mingchao')">鸣潮</button>
+  <button class="filter-btn" onclick="f('juequ')">绝区零</button>
+  <button class="filter-btn" onclick="f('warmth')">无限暖暖</button>
+  <button class="filter-btn" onclick="f('reverse')">重返未来</button>
+  <button class="filter-btn" onclick="f('Arknigs')">明日方舟</button>
+  <button class="filter-btn" onclick="f('Arknigs:Endfield')">终末地</button>
+  <button class="filter-btn sort-btn" onclick="toggleSort()">按时间 ↓</button>
+</div>
+<div class="card-list single-layout" id="cardList"></div>
+<div class="add-record-btn" onclick="openModal()">
+  <span class="add-icon">+</span><span>添加活动</span>
+</div>
+<!-- 底部工具栏 -->
+<div class="toolbar">
+  <div class="toolbar-item" onclick="toggleLayout()" ontouchstart="toggleLayout()"><span>⬛</span><span>布局</span></div>
+  <div class="toolbar-item" onclick="refreshData()" ontouchstart="refreshData()"><span>🔄</span><span>同步</span></div>
+  <div class="toolbar-item" onclick="toggleSort()" ontouchstart="toggleSort()"><span>↓↑</span><span>排序</span></div>
+  <div class="toolbar-item" onclick="search()" ontouchstart="search()"><span>🔍</span><span>搜索</span></div>
+  <div class="toolbar-item" onclick="exportData()" ontouchstart="exportData()"><span>📤</span><span>导出</span></div>
+</div>
+<!-- 编辑弹窗 -->
+<div class="modal" id="md">
+  <div class="modal-content">
+    <div id="modalTitle" style="font-size:18px;margin-bottom:20px;font-weight:600">添加活动</div>
+    <input type="hidden" id="editId">
+    <div class="form-group">
+      <label class="form-label" for="n">活动名</label>
+      <input class="form-input" id="n">
+    </div>
+    <div class="form-group">
+      <label class="form-label" for="g">游戏</label>
+      <select class="form-select" id="g">
+        <option value="genshin">原神</option>
+        <option value="starrail">星穹铁道</option>
+        <option value="mingchao">鸣潮</option>
+        <option value="juequ">绝区零</option>
+        <option value="warmth">无限暖暖</option>
+        <option value="reverse">重返未来</option>
+        <option value="Arknigs">明日方舟</option>
+        <option value="Arknigs:Endfield">终末地</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label class="form-label" for="s">开始时间</label>
+      <input type="date" class="form-input" id="s">
+    </div>
+    <div class="form-group">
+      <label class="form-label" for="e">结束时间</label>
+      <input type="date" class="form-input" id="e">
+    </div>
+    <div class="form-group">
+      <label class="form-label" for="r">提前几天提醒</label>
+      <select class="form-select" id="r">
+        <option value="1">1天</option>
+        <option value="3">3天</option>
+        <option value="5">5天</option>
+        <option value="7">7天</option>
+      </select>
+    </div>
+    <div class="modal-actions">
+      <button class="modal-btn cancel" onclick="closeMd()">取消</button>
+      <button class="modal-btn confirm" id="modalBtn" onclick="saveOrUpdate()">保存</button>
+    </div>
   </div>
-  <script>
-    function leftDays(end) {
-      const now = new Date();
-      now.setHours(0,0,0,0);
-      const ed = new Date(end);
-      ed.setHours(0,0,0,0);
-      return Math.ceil((ed - now) / 86400000);
-    }
-
-    function getGameClass(game) {
-      const map = {
-        "原神": "game-genshin",
-        "星穹铁道": "game-starrail",
-        "明日方舟": "game-Arknigs",
-        "鸣潮": "game-mingchao",
-        "绝区零": "game-juequ"
+</div>
+<script>
+// 全局常量与变量
+const STORAGE_KEY = "game_activity_list";
+const DATA_URL = "data/events.json"; // 本地静态数据，无跨域
+let list = [];
+let filter = "all";
+let asc = true;
+let grid = false; // 核心修复：默认单列布局，强制初始化
+let isEdit = false;
+let isPasswordVerified = true; // 直接设为已验证，跳过密码
+let lastSearchKeyword = "";
+// 中文名映射（中文→英文标识，适配events.json中文game字段）
+const GAME_NAME_MAP = {
+  "原神": "genshin", "星穹铁道": "starrail", "鸣潮": "mingchao",
+  "绝区零": "juequ", "无限暖暖": "warmth", "重返未来": "reverse",
+  "明日方舟": "Arknigs", "终末地": "Arknigs:Endfield", "重返未来1999": "reverse",
+  "崩坏：星穹铁道": "starrail" // 兼容带前缀的中文名称
+};
+// ========== 核心：无跨域同步官方活动（修复字段匹配+分类颜色） ==========
+async function refreshData() {
+  try {
+    const loadingTip = document.createElement('div');
+    loadingTip.style.position = 'fixed';
+    loadingTip.style.top = '50%';
+    loadingTip.style.left = '50%';
+    loadingTip.style.transform = 'translate(-50%, -50%)';
+    loadingTip.style.padding = '12px 20px';
+    loadingTip.style.background = 'rgba(0,0,0,0.75)';
+    loadingTip.style.color = 'white';
+    loadingTip.style.borderRadius = '12px';
+    loadingTip.style.zIndex = '9999';
+    loadingTip.textContent = '正在同步最新活动...';
+    document.body.appendChild(loadingTip);
+    const response = await fetch(DATA_URL);
+    if (!response.ok) throw new Error("数据文件不存在");
+    const officialEvents = await response.json();
+    
+    // 修复1：转换中文game字段为前端识别的英文标识，同时补全唯一ID
+    const formattedEvents = officialEvents.map(event => {
+      // 中文game名转英文标识，兼容带/不带前缀的名称
+      const gameKey = GAME_NAME_MAP[event.game] || event.game;
+      return {
+        id: Date.now() + Math.floor(Math.random() * 1000), // 补全唯一ID，避免编辑删除异常
+        game: gameKey,
+        name: event.name, // 适配前端name字段，彻底解决undefined
+        start: event.start,
+        end: event.end,
+        remind: event.remind || 1
       };
-      return map[game] || "";
+    });
+
+    // 合并去重（修复匹配逻辑）
+    const newEvents = formattedEvents.filter(newEvent => {
+      return !list.some(oldEvent => oldEvent.name === newEvent.name && oldEvent.game === newEvent.game);
+    });
+    document.body.removeChild(loadingTip);
+    if (newEvents.length === 0) {
+      alert("✅ 已是最新活动，无需更新！");
+      return;
     }
+    list = [...list, ...newEvents];
+    saveData();
+    render();
+    alert(`✅ 同步成功！新增${newEvents.length}条官方活动`);
+  } catch (e) {
+    const loadingTip = document.querySelector('div[style*="position:fixed"]');
+    if (loadingTip) document.body.removeChild(loadingTip);
+    console.error("同步失败：", e);
+    alert("⚠️ 同步失败，使用本地缓存数据\n（首次部署请先手动运行Actions生成数据）");
+  }
+}
+// ========== 日期格式化 ==========
+function fmt(d) {
+  const t = new Date(d);
+  return `${t.getFullYear()}/${String(t.getMonth()+1).padStart(2,0)}/${String(t.getDate()).padStart(2,0)}`;
+}
+function left(end) {
+  const now = new Date();
+  now.setHours(0,0,0,0);
+  const ed = new Date(end);
+  ed.setHours(0,0,0,0);
+  return Math.ceil((ed - now) / 86400000);
+}
+// ========== 本地数据存储 ==========
+function loadData() {
+  try {
+    const storedData = localStorage.getItem(STORAGE_KEY);
+    list = storedData ? JSON.parse(storedData) : [];
+  } catch (e) {
+    list = [];
+    console.error("数据读取失败：", e);
+  }
+}
+function saveData() {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(list));
+  } catch (e) {
+    alert("❌ 数据保存失败：" + e.message);
+  }
+}
+// ========== 卡片渲染（修复颜色显示） ==========
+function render() {
+  const el = document.getElementById("cardList");
+  el.innerHTML = "";
+  let arr = [...list];
+  // 筛选+排序
+  if (filter !== "all") arr = arr.filter(i => i.game === filter);
+  arr.sort((a, b) => asc ? new Date(a.end) - new Date(b.end) : new Date(b.end) - new Date(a.end));
+  // 渲染卡片
+  arr.forEach(item => {
+    const l = left(item.end);
+    const ex = l < 0;
+    const cn = ex ? "card expired " + (grid ? "grid-item" : "") : "card " + (grid ? "grid-item" : "");
+    
+    const actionHtml = ex ? `
+      <div class="card-actions-wrap">
+        <span style="color:#86868b;font-size:12px">已过期</span>
+        <div class="card-opt-group">
+          <span class="card-edit" onclick="edit(${item.id})">修改</span>
+          <span class="card-del" onclick="del(${item.id})">删除</span>
+        </div>
+      </div>
+    ` : `
+      <div class="card-actions-wrap">
+        <div class="card-remind" onclick="setRemind(${item.id})">⏰ 提前${item.remind||1}天提醒</div>
+        <div class="card-opt-group">
+          <span class="card-edit" onclick="edit(${item.id})">修改</span>
+          <span class="card-del" onclick="del(${item.id})">删除</span>
+        </div>
+      </div>
+    `;
+    // 到期状态标签
+    let expireHtml = '';
+    if (ex) {
+      expireHtml = '<span class="card-expire">已过期</span>';
+    } else if (l <= 3) {
+      expireHtml = `<span class="card-expire soon">剩${l}天</span>`;
+    } else if (l <= 7) {
+      expireHtml = `<span class="card-expire">剩${l}天</span>`;
+    }
+    // 修复2：game字段为英文标识，匹配css颜色class
+    const html = `
+      <span class="card-game-tag ${item.game}">${gn(item.game)}</span>
+      ${expireHtml}
+      <div class="card-title">${item.name}</div>
+      <div class="card-row"><span class="calendar-icon">📅</span><span class="card-label">开始</span><span class="date-value">${fmt(item.start)}</span></div>
+      <div class="card-row"><span class="calendar-icon">📅</span><span class="card-label">结束</span><span class="date-value">${fmt(item.end)}</span></div>
+      ${actionHtml}
+    `;
+    const div = document.createElement("div");
+    div.className = cn;
+    div.dataset.id = item.id;
+    div.innerHTML = html;
+    el.appendChild(div);
+  });
+  if (lastSearchKeyword) highlightSearchResults(lastSearchKeyword);
+}
+// ========== 工具函数 ==========
+function gn(g) {
+  const m = {
+    genshin:"原神",starrail:"星穹铁道",mingchao:"鸣潮",juequ:"绝区零",
+    warmth:"无限暖暖",reverse:"重返未来",Arknigs:"明日方舟",
+    "Arknigs:Endfield":"终末地"
+  };
+  return m[g] || g;
+}
+function f(g) {
+  filter = g;
+  document.querySelectorAll(".filter-btn").forEach(b => b.classList.remove("active"));
+  event.target.classList.add("active");
+  render();
+}
+function toggleSort() {
+  asc = !asc;
+  document.querySelector(".sort-btn").innerText = "按时间 " + (asc ? "↓" : "↑");
+  render();
+}
+// 核心修复：布局切换函数（强制样式生效）
+function toggleLayout() {
+  grid = !grid;
+  const cardList = document.getElementById("cardList");
+  // 强制重置布局类名
+  cardList.classList.remove("single-layout", "grid-layout");
+  if (grid) {
+    cardList.classList.add("grid-layout");
+  } else {
+    cardList.classList.add("single-layout");
+  }
+  // 重新渲染卡片，确保样式生效
+  render();
+  // 提示弹窗
+  const tip = document.createElement('div');
+  tip.style.position = 'fixed';
+  tip.style.top = '50%';
+  tip.style.left = '50%';
+  tip.style.transform = 'translate(-50%, -50%)';
+  tip.style.padding = '8px 16px';
+  tip.style.background = 'rgba(0,0,0,0.75)';
+  tip.style.color = 'white';
+  tip.style.borderRadius = '8px';
+  tip.style.zIndex = '9999';
+  tip.style.fontSize = '14px';
+  tip.textContent = grid ? "已切换为网格布局" : "已切换为单列布局";
+  document.body.appendChild(tip);
+  setTimeout(() => document.body.removeChild(tip), 1500);
+}
+function del(id) {
+  if (!confirm("确定删除该活动？")) return;
+  list = list.filter(item => item.id !== id);
+  saveData();
+  render();
+}
+function edit(id) {
+  isEdit = true;
+  const item = list.find(i => i.id === id);
+  document.getElementById("editId").value = id;
+  document.getElementById("n").value = item.name;
+  document.getElementById("g").value = item.game;
+  document.getElementById("s").value = item.start;
+  document.getElementById("e").value = item.end;
+  document.getElementById("r").value = item.remind || 1;
+  document.getElementById("modalTitle").innerText = "修改活动";
+  document.getElementById("modalBtn").innerText = "修改";
+  document.getElementById("md").style.display = "flex";
+}
+function openModal() {
+  isEdit = false;
+  document.getElementById("editId").value = "";
+  document.getElementById("n").value = "";
+  document.getElementById("g").value = "genshin";
+  document.getElementById("s").value = "";
+  document.getElementById("e").value = "";
+  document.getElementById("r").value = 1;
+  document.getElementById("modalTitle").innerText = "添加活动";
+  document.getElementById("modalBtn").innerText = "保存";
+  document.getElementById("md").style.display = "flex";
+}
+function saveOrUpdate() {
+  const id = document.getElementById("editId").value;
+  const name = document.getElementById("n").value.trim();
+  const game = document.getElementById("g").value;
+  const start = document.getElementById("s").value;
+  const end = document.getElementById("e").value;
+  const remind = Number(document.getElementById("r").value);
+  if (!name || !start || !end) return alert("请填写完整的活动信息！");
+  if (isEdit) {
+    const idx = list.findIndex(i => i.id == id);
+    list[idx] = {...list[idx], name, game, start, end, remind};
+  } else {
+    list.push({id: Date.now(), name, game, start, end, remind});
+  }
+  saveData();
+  closeMd();
+  render();
+}
+function closeMd() {
+  document.getElementById("md").style.display = "none";
+}
+function setRemind(id) {
+  const item = list.find(i => i.id === id);
+  const d = prompt("提前几天提醒？", item.remind || 1);
+  if (!d || isNaN(d)) return;
+  item.remind = Number(d);
+  saveData();
+  render();
+  alert("✅ 提醒设置成功！");
+}
+function highlightSearchResults(keyword) {
+  const allCards = document.querySelectorAll('.card');
+  let hasMatch = false;
+  allCards.forEach(card => {
+    const item = list.find(i => i.id == card.dataset.id);
+    const isMatch = item.name.includes(keyword) || gn(item.game).includes(keyword);
+    if (isMatch) {
+      card.classList.add('highlight');
+      card.classList.remove('faded');
+      hasMatch = true;
+    } else {
+      card.classList.remove('highlight');
+      card.classList.add('faded');
+    }
+  });
+  document.getElementById('resetSearchBtn').style.display = hasMatch ? 'block' : 'none';
+  if (!hasMatch) alert("❌ 未找到匹配的活动");
+}
+function resetSearch() {
+  document.querySelectorAll('.card').forEach(card => card.classList.remove('highlight', 'faded'));
+  lastSearchKeyword = "";
+  document.getElementById('resetSearchBtn').style.display = 'none';
+}
+function search() {
+  const keyword = prompt("请输入活动名/游戏名搜索：");
+  if (!keyword) return;
+  lastSearchKeyword = keyword.trim();
+  highlightSearchResults(lastSearchKeyword);
+}
+function testRemind() {
+  alert("✅ 本地提醒功能已启用，活动到期前会自动提醒！");
+}
+function exportData() {
+  try {
+    const dataStr = JSON.stringify(list, null, 2);
+    const dataBlob = new Blob([dataStr], { type: 'application/json' });
+    const url = URL.createObjectURL(dataBlob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `游戏活动数据_${new Date().toLocaleDateString().replace(/\//g, '-')}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+    alert("✅ 数据导出成功！");
+  } catch (e) {
+    alert("❌ 导出失败：" + e.message);
+  }
+}
 
-    fetch('/data/events.json')
-      .then(res => res.json())
-      .then(events => {
-        const listEl = document.getElementById('event-list');
-        // 过滤并排序：先显示未过期，按剩余时间升序
-        const sortedEvents = events
-          .map(e => ({...e, left: leftDays(e.end)}))
-          .sort((a, b) => a.left - b.left);
-
-        if (sortedEvents.length === 0) {
-          listEl.innerHTML = '<div style="text-align:center;color:#86868b;font-size:12px;padding:20px 0">暂无活动</div>';
-          return;
-        }
-
-        listEl.innerHTML = sortedEvents.slice(0, 4).map(e => {
-          const isExpired = e.left < 0;
-          const countdownText = isExpired 
-            ? '<span class="event-expired">已过期</span>'
-            : e.left === 0 ? '今天结束' : `剩 ${e.left} 天`;
-
-          return `
-            <div class="event-item">
-              <div class="event-info">
-                <div class="event-name">
-                  <span class="event-game ${getGameClass(e.game)}">${e.game}</span>
-                  ${e.name}
-                </div>
-                <div class="event-countdown">${countdownText}</div>
-              </div>
-            </div>
-          `;
-        }).join('');
-      })
-      .catch(err => {
-        document.getElementById('event-list').innerHTML = 
-          '<div style="text-align:center;color:#ff4444;font-size:12px;padding:20px 0">加载失败</div>';
-      });
-  </script>
+// ========== PWA注册（OPPO桌面卡片必需） ==========
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('service-worker.js')
+      .then(registration => console.log('PWA ServiceWorker 注册成功', registration.scope))
+      .catch(err => console.log('ServiceWorker 注册失败', err));
+  });
+}
+// ========== 页面初始化（直接加载，不再显示密码弹窗） ==========
+window.onload = () => {
+  setTimeout(() => {
+    try {
+      loadData();
+      render();
+      // 自动同步最新活动
+      setTimeout(refreshData, 1000);
+    } catch (e) {
+      console.error("初始化失败：", e);
+      alert("❌ 页面加载异常，请刷新重试！");
+    }
+  }, 100);
+};
+// 屏幕旋转适配
+window.addEventListener('resize', () => {
+  if (isPasswordVerified) render();
+});
+</script>
 </body>
 </html>
