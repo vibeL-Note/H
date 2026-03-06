@@ -6,14 +6,14 @@ def get_game_events():
     events = [
         {
             "game": "原神",
-            "name": "风花的呼吸",  # 核心：用name字段替代title
+            "name": "风花的呼吸",  
             "start": "2026/03/08",
             "end": "2026/03/22",
-            "remind": 1             # 提前1天提醒
+            "remind": 1             
         },
         {
-            "game": "崩坏：星穹铁道",
-            "name": "模拟宇宙·开拓续闻",  # 补充name字段
+            "game": "星穹铁道",
+            "name": "模拟宇宙·开拓续闻",  
             "start": "2026/03/06",
             "end": "2026/03/20",
             "remind": 1
@@ -53,3 +53,4 @@ if __name__ == "__main__":
     except Exception as e:
         print(f"同步失败：{str(e)}")
         raise e  # 抛出异常，便于Actions排查
+
