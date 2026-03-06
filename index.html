@@ -1,590 +1,614 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="mobile-web-app-capable" content="yes">
-    <meta name="theme-color" content="#165DFF">
-    <link rel="manifest" href="/manifest.json">
-    <title>游戏活动日历</title>
-    <style>
-        /* 全局重置 & 基础变量（统一配色） */
-        :root {
-            --primary: #165DFF;
-            --success: #00B42A;
-            --warning: #FF7D00;
-            --danger: #F53F3F;
-            --gray-100: #F2F3F5;
-            --gray-200: #E5E6EB;
-            --gray-300: #C9CDD4;
-            --gray-400: #86909C;
-            --gray-500: #4E5969;
-            --gray-600: #1D2129;
-            --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.06);
-            --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.08);
-            --radius-sm: 4px;
-            --radius-md: 8px;
-            --radius-lg: 16px;
-            --transition: all 0.2s ease;
-        }
-
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-        }
-
-        body {
-            background-color: var(--gray-100);
-            padding: 24px;
-            color: var(--gray-600);
-            line-height: 1.5;
-        }
-
-        /* 顶部筛选栏 - 极简胶囊样式 */
-        .filter-bar {
-            display: flex;
-            gap: 8px;
-            flex-wrap: wrap;
-            margin-bottom: 20px;
-        }
-
-        .filter-tab {
-            padding: 6px 16px;
-            border-radius: var(--radius-lg);
-            border: none;
-            background-color: white;
-            color: var(--gray-500);
-            cursor: pointer;
-            font-size: 14px;
-            transition: var(--transition);
-            box-shadow: var(--shadow-sm);
-        }
-
-        .filter-tab.active {
-            background-color: var(--primary);
-            color: white;
-            box-shadow: var(--shadow-md);
-        }
-
-        .filter-tab:hover:not(.active) {
-            background-color: var(--gray-100);
-        }
-
-        /* 功能按钮栏 - 扁平化极简设计 */
-        .func-bar {
-            display: flex;
-            gap: 8px;
-            flex-wrap: wrap;
-            margin-bottom: 24px;
-            align-items: center;
-        }
-
-        .func-btn {
-            padding: 8px 12px;
-            border-radius: var(--radius-md);
-            border: none;
-            background-color: white;
-            color: var(--gray-500);
-            cursor: pointer;
-            font-size: 14px;
-            display: inline-flex;
-            align-items: center;
-            gap: 6px;
-            box-shadow: var(--shadow-sm);
-            transition: var(--transition);
-        }
-
-        .func-btn.primary {
-            background-color: var(--primary);
-            color: white;
-        }
-
-        .func-btn:hover {
-            transform: translateY(-1px);
-            box-shadow: var(--shadow-md);
-        }
-
-        .func-btn svg {
-            width: 16px;
-            height: 16px;
-        }
-
-        /* 活动卡片容器 - 网格布局+自适应 */
-        .event-container {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
-            gap: 16px;
-            margin-bottom: 24px;
-        }
-
-        /* 活动卡片 - 极简卡片+柔和阴影 */
-        .event-card {
-            background-color: white;
-            border-radius: var(--radius-md);
-            padding: 20px;
-            box-shadow: var(--shadow-sm);
-            transition: var(--transition);
-            position: relative;
-            overflow: hidden;
-        }
-
-        .event-card:hover {
-            transform: translateY(-2px);
-            box-shadow: var(--shadow-md);
-        }
-
-        /* 游戏标识色条（顶部细条，极简区分） */
-        .event-card::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 4px;
-            height: 100%;
-            background-color: var(--primary);
-        }
-
-        .event-card.genshin::before { background-color: var(--success); }
-        .event-card.hsr::before { background-color: var(--primary); }
-        .event-card.arknights::before { background-color: var(--warning); }
-        .event-card.other::before { background-color: var(--gray-400); }
-
-        /* 卡片内部样式 - 极简排版 */
-        .event-game {
-            font-size: 15px;
-            font-weight: 600;
-            color: var(--gray-600);
-            margin-bottom: 8px;
-        }
-
-        .event-title {
-            font-size: 14px;
-            color: var(--gray-500);
-            margin-bottom: 16px;
-            line-height: 1.4;
-        }
-
-        .event-meta {
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
-            margin-bottom: 16px;
-        }
-
-        .event-meta-item {
-            font-size: 12px;
-            color: var(--gray-400);
-            display: flex;
-            align-items: center;
-            gap: 6px;
-        }
-
-        .event-meta-item.remind {
-            color: var(--danger);
-        }
-
-        .event-meta-item svg {
-            width: 14px;
-            height: 14px;
-        }
-
-        .event-actions {
-            display: flex;
-            gap: 16px;
-            font-size: 12px;
-        }
-
-        .event-actions a {
-            color: var(--primary);
-            text-decoration: none;
-            transition: var(--transition);
-        }
-
-        .event-actions a:hover {
-            color: #0E42D2;
-            text-decoration: underline;
-        }
-
-        /* 添加活动按钮 - 全屏宽度+极简设计 */
-        .add-event-btn {
-            width: 100%;
-            padding: 12px;
-            border-radius: var(--radius-md);
-            border: none;
-            background-color: var(--primary);
-            color: white;
-            font-size: 15px;
-            cursor: pointer;
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            gap: 8px;
-            box-shadow: var(--shadow-sm);
-            transition: var(--transition);
-        }
-
-        .add-event-btn:hover {
-            background-color: #0E42D2;
-            transform: translateY(-1px);
-            box-shadow: var(--shadow-md);
-        }
-
-        .add-event-btn svg {
-            width: 18px;
-            height: 18px;
-        }
-
-        /* 空数据提示 - 极简居中 */
-        .empty-tip {
-            grid-column: 1/-1;
-            text-align: center;
-            padding: 60px 20px;
-            color: var(--gray-400);
-            font-size: 14px;
-        }
-
-        /* 响应式适配 - 移动端优化 */
-        @media (max-width: 768px) {
-            body {
-                padding: 16px;
-            }
-
-            .event-container {
-                grid-template-columns: 1fr;
-            }
-
-            .filter-bar, .func-bar {
-                justify-content: flex-start;
-            }
-
-            .func-btn {
-                padding: 6px 10px;
-                font-size: 13px;
-            }
-        }
-
-        /* 同步加载动画（极简旋转） */
-        @keyframes spin {
-            to { transform: rotate(360deg); }
-        }
-
-        .animate-spin {
-            animation: spin 1s linear infinite;
-        }
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover"/>
+  <title>游戏活动日历</title>
+  <!-- PWA核心配置（OPPO桌面卡片必需） -->
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#007aff">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="游戏活动日历">
+  <!-- 图标适配OPPO桌面 -->
+  <link rel="icon" type="image/png" sizes="192x192" href="https://picsum.photos/192/192">
+  <link rel="apple-touch-icon" sizes="192x192" href="https://picsum.photos/192/192">
+  
+  <style>
+    *{margin:0;padding:0;box-sizing:border-box;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"OPPO Sans",sans-serif}
+    body{background:#f7f8fa;padding:16px 16px 100px;--safe-bottom: env(safe-area-inset-bottom);padding-bottom: calc(80px + var(--safe-bottom))}
+    .header{display:flex;align-items:center;gap:12px;padding:10px 0}
+    .header h1{font-size:22px;color:#1d1d1f;font-weight:600}
+    .filter-bar{display:flex;flex-wrap:wrap;gap:8px;margin:14px 0}
+    .filter-btn{padding:6px 12px;border-radius:20px;background:#fff;border:1px solid #e5e5e7;font-size:14px;cursor:pointer;transition:all 0.2s ease}
+    .filter-btn.active{background:#007aff;color:#fff;border-color:#007aff}
+    .sort-btn{margin-left:auto}
+    .card-list{display:grid;grid-template-columns:1fr;gap:16px}
+    .card{background:#fff;border-radius:16px;padding:20px;position:relative;box-shadow:0 2px 8px #000008;transition:all 0.3s ease}
+    .card.highlight{border:2px solid #007aff;background:#f0f8ff;box-shadow:0 0 12px rgba(0, 122, 255, 0.15);}
+    .card.faded{opacity:0.5}
+    .card.expired{opacity:0.45;filter:grayscale(80%)}
+    .card-expire{position:absolute;right:16px;top:16px;font-size:12px;padding:3px 8px;border-radius:12px;background:#ffebee;color:#d32f2f;font-weight:500}
+    .card-expire.soon{background:#fff3e0;color:#f57c00}
+    .card-actions-wrap {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      margin-top: 16px;
+      width: 100%;
+    }
+    .card-remind {
+      font-size:13px;color:#007aff;cursor:pointer;margin:0;flex-shrink:0;font-weight:500
+    }
+    .card-opt-group {
+      display:flex;align-items:center;gap:12px;flex-shrink:0;
+    }
+    .card-edit {
+      font-size:14px;padding:3px 6px;cursor:pointer;color:#1890ff;background:transparent;border:none;
+    }
+    .card-del {
+      font-size:14px;padding:3px 6px;cursor:pointer;color:#666;background:transparent;border:none;
+    }
+    .card-del:hover {color:#ff4444;}
+    .card-game-tag{display:inline-block;padding:3px 10px;border-radius:12px;font-size:12px;margin-bottom:10px;font-weight:500}
+    .card-game-tag.mingchao{background:#e6f7ff;color:#1890ff}
+    .card-game-tag.warmth{background:#fff0f6;color:#eb2f96}
+    .card-game-tag.genshin{background:#f6ffed;color:#52c41a}
+    .card-game-tag.juequ{background:#f9f0ff;color:#722ed1}
+    .card-game-tag.starrail{background:#fff7e6;color:#fa8c16}
+    .card-game-tag.reverse{background:#f1ba20;color:#ab751d}
+    .card-game-tag.Arknigs{background:#faf7ef;color:#9e2120}
+    .card-game-tag.Arknigs\:Endfield{background:#faf7ef;color:#9e2120 !important;}
+    .card-title{font-size:18px;font-weight:600;margin-bottom:16px;color:#1d1d1f;line-height:1.3}
+    .card-row{display:flex;align-items:center;gap:8px;margin-bottom:10px;font-size:15px;line-height:1.4;}
+    .calendar-icon {display:inline-block;width:20px;height:20px;font-size:16px;color:#007aff;text-align:center;line-height:20px;flex-shrink:0;}
+    .card-label{color:#86868b;min-width:50px;flex-shrink:0;}
+    .date-value{font-size:15px;color:#1d1d1f;flex:1;font-weight:500}
+    .add-record-btn{display:flex;align-items:center;justify-content:center;gap:8px;background:#fff;border-radius:16px;padding:18px;margin-top:24px;cursor:pointer;box-shadow:0 2px 8px #000008}
+    .add-icon{width:28px;height:28px;border-radius:50%;background:#007aff;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:600}
+    .toolbar{position:fixed;bottom:0;left:0;right:0;background:#fff;border-top:1px solid #e5e5e7;display:flex;justify-content:space-around;padding:12px 0;padding-bottom: calc(12px + var(--safe-bottom));z-index:90;}
+    .toolbar-item{display:flex;flex-direction:column;align-items:center;gap:4px;font-size:12px;color:#666;cursor:pointer;padding:6px 10px;border-radius:12px;-webkit-tap-highlight-color:transparent;}
+    .toolbar-item:active{background-color:#f0f0f0;}
+    .toolbar-item span:first-child{font-size:20px}
+    .modal{position:fixed;top:0;left:0;right:0;bottom:0;background:#0008;display:none;align-items:center;justify-content:center;z-index:999}
+    .modal-content{background:#fff;border-radius:16px;padding:24px;width:90%;max-width:400px}
+    .form-group{margin-bottom:18px}
+    .form-label{display:block;font-size:14px;color:#666;margin-bottom:6px;font-weight:500}
+    .form-input,.form-select{width:100%;padding:12px 14px;border:1px solid #e5e5e7;border-radius:12px;font-size:15px;line-height:1.4;appearance:none;-webkit-appearance:none;background-color:#fff;box-sizing:border-box;}
+    input[type="date"]{font-family:inherit;color:#333;height:44px;box-sizing:border-box;}
+    input[type="date"]::-webkit-calendar-picker-indicator {width:20px;height:20px;margin-right:8px;cursor:pointer;filter:invert(0.5);}
+    .form-input:focus,.form-select:focus{outline:none;border-color:#007aff;box-shadow:0 0 0 2px rgba(0,122,255,0.2);}
+    .modal-actions{display:flex;justify-content:flex-end;gap:12px;margin-top:24px}
+    .modal-btn{padding:10px 20px;border-radius:12px;border:none;cursor:pointer;font-size:15px;font-weight:500}
+    .cancel{background:#f5f5f5;color:#666}
+    .confirm{background:#007aff;color:#fff}
+    /* 电脑端布局适配 */
+    @media screen and (min-width:768px) {
+      .card-list{grid-template-columns:repeat(auto-fill,minmax(350px,1fr));gap:20px}
+      body{padding:24px 24px 100px}
+      .card{padding:24px}
+    }
+    /* OPPO手机端专属适配 */
+    @media screen and (max-width:767px) {
+      .card-list.grid-layout {
+        grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)) !important;
+        gap: 12px !important;
+      }
+      .card-list.single-layout {
+        grid-template-columns: 1fr !important;
+        gap: 16px !important;
+      }
+      .card.grid-item{padding:14px !important}
+      .card.grid-item .card-title{font-size:14px !important;margin-bottom:8px !important}
+      .card.grid-item .card-row{font-size:12px !important;margin-bottom:6px !important}
+      .card.grid-item .card-game-tag{font-size:10px !important;padding:2px 6px !important;margin-bottom:6px !important}
+      .card.grid-item .card-expire{font-size:10px !important;padding:2px 4px !important;right:10px;top:10px}
+      .filter-btn{font-size:13px;padding:5px 10px}
+      .header h1{font-size:20px}
+    }
+    .reset-search-btn{position:fixed;top:16px;right:16px;padding:8px 14px;border-radius:12px;background:#007aff;color:#fff;border:none;font-size:14px;cursor:pointer;display:none;z-index:99;}
+    /* 密码弹窗样式 */
+    .password-modal {
+      position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.6);display:flex;align-items:center;justify-content:center;z-index:9999;
+    }
+    .password-modal-content {
+      background:#fff;border-radius:20px;padding:32px 24px;width:90%;max-width:400px;box-shadow:0 4px 20px rgba(0,0,0,0.15);text-align:center;
+    }
+    .password-modal-title {font-size:18px;font-weight:600;color:#1d1d1f;margin-bottom:20px;}
+    .password-modal-input {width:100%;padding:14px 16px;border:1px solid #e5e5e7;border-radius:12px;font-size:16px;margin-bottom:8px;box-sizing:border-box;transition:border-color 0.2s ease;}
+    .password-modal-input.error {border-color:#ff4444;box-shadow:0 0 0 2px rgba(255,68,68,0.1);}
+    .password-modal-input:focus {outline:none;border-color:#007aff;box-shadow:0 0 0 2px rgba(0,122,255,0.2);}
+    .password-modal-error {color:#ff4444;font-size:14px;margin-bottom:20px;min-height:18px;text-align:left;padding-left:4px;line-height:1.4;}
+    .password-modal-btns {display:flex;gap:12px;justify-content:center;}
+    .password-modal-btn {padding:12px 24px;border-radius:12px;border:none;font-size:16px;cursor:pointer;flex:1;max-width:150px;font-weight:500}
+    .password-modal-confirm {background:#007aff;color:#fff;}
+    .password-modal-cancel {background:#f5f5f5;color:#666;}
+  </style>
 </head>
 <body>
-    <!-- 1. 顶部筛选标签（极简胶囊样式） -->
-    <div class="filter-bar">
-        <button class="filter-tab active" data-category="全部">全部</button>
-        <button class="filter-tab" data-category="原神">原神</button>
-        <button class="filter-tab" data-category="星穹铁道">星穹铁道</button>
-        <button class="filter-tab" data-category="鸣潮">鸣潮</button>
-        <button class="filter-tab" data-category="绝区零">绝区零</button>
-        <button class="filter-tab" data-category="无限暖暖">无限暖暖</button>
-        <button class="filter-tab" data-category="重返未来">重返未来</button>
-        <button class="filter-tab" data-category="明日方舟">明日方舟</button>
-        <button class="filter-tab" data-category="终末地">终末地</button>
+<!-- 密码弹窗 -->
+<div class="password-modal" id="passwordModal">
+  <div class="password-modal-content">
+    <div class="password-modal-title">请输入访问密码</div>
+    <input type="password" class="password-modal-input" id="passwordInput" placeholder="请输入密码">
+    <div class="password-modal-error" id="passwordError"></div>
+    <div class="password-modal-btns">
+      <button class="password-modal-btn password-modal-cancel" id="cancelBtn">取消</button>
+      <button class="password-modal-btn password-modal-confirm" id="confirmBtn">确认</button>
     </div>
-
-    <!-- 2. 功能按钮栏（扁平化极简） -->
-    <div class="func-bar">
-        <button class="func-btn" id="layout-btn">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <rect x="3" y="3" width="7" height="7"></rect>
-                <rect x="14" y="3" width="7" height="7"></rect>
-                <rect x="14" y="14" width="7" height="7"></rect>
-                <rect x="3" y="14" width="7" height="7"></rect>
-            </svg>
-            布局
-        </button>
-        <button class="func-btn primary" id="sync-btn">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M21 12a9 9 0 0 1-9 9"></path>
-                <path d="M21 12a9 9 0 0 0-9-9"></path>
-                <path d="M3 12a9 9 0 0 1 9-9"></path>
-                <path d="M3 12a9 9 0 0 0 9 9"></path>
-            </svg>
-            同步
-        </button>
-        <button class="func-btn" id="sort-btn">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
-                <polyline points="9 22 9 12 15 12 15 22"></polyline>
-            </svg>
-            按时间 ↓
-        </button>
-        <button class="func-btn" id="search-btn">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <circle cx="11" cy="11" r="8"></circle>
-                <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
-            </svg>
-            搜索
-        </button>
-        <button class="func-btn" id="export-btn">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-                <polyline points="7 10 12 15 17 10"></polyline>
-                <line x1="12" y1="15" x2="12" y2="3"></line>
-            </svg>
-            导出
-        </button>
+  </div>
+</div>
+<!-- 页面主体 -->
+<button class="reset-search-btn" id="resetSearchBtn" onclick="resetSearch()">重置搜索</button>
+<div class="header">
+  <h1>游戏活动日历</h1>
+</div>
+<div class="filter-bar">
+  <button class="filter-btn active" onclick="f('all')">全部</button>
+  <button class="filter-btn" onclick="f('genshin')">原神</button>
+  <button class="filter-btn" onclick="f('starrail')">星穹铁道</button>
+  <button class="filter-btn" onclick="f('mingchao')">鸣潮</button>
+  <button class="filter-btn" onclick="f('juequ')">绝区零</button>
+  <button class="filter-btn" onclick="f('warmth')">无限暖暖</button>
+  <button class="filter-btn" onclick="f('reverse')">重返未来</button>
+  <button class="filter-btn" onclick="f('Arknigs')">明日方舟</button>
+  <button class="filter-btn" onclick="f('Arknigs:Endfield')">终末地</button>
+  <button class="filter-btn sort-btn" onclick="toggleSort()">按时间 ↓</button>
+</div>
+<div class="card-list" id="cardList"></div>
+<div class="add-record-btn" onclick="openModal()">
+  <span class="add-icon">+</span><span>添加活动</span>
+</div>
+<!-- 底部工具栏 -->
+<div class="toolbar">
+  <div class="toolbar-item" onclick="toggleLayout()" ontouchstart="toggleLayout()"><span>⬛</span><span>布局</span></div>
+  <div class="toolbar-item" onclick="refreshData()" ontouchstart="refreshData()"><span>🔄</span><span>同步</span></div>
+  <div class="toolbar-item" onclick="toggleSort()" ontouchstart="toggleSort()"><span>↓↑</span><span>排序</span></div>
+  <div class="toolbar-item" onclick="search()" ontouchstart="search()"><span>🔍</span><span>搜索</span></div>
+  <div class="toolbar-item" onclick="exportData()" ontouchstart="exportData()"><span>📤</span><span>导出</span></div>
+</div>
+<!-- 编辑弹窗 -->
+<div class="modal" id="md">
+  <div class="modal-content">
+    <div id="modalTitle" style="font-size:18px;margin-bottom:20px;font-weight:600">添加活动</div>
+    <input type="hidden" id="editId">
+    <div class="form-group">
+      <label class="form-label" for="n">活动名</label>
+      <input class="form-input" id="n">
     </div>
+    <div class="form-group">
+      <label class="form-label" for="g">游戏</label>
+      <select class="form-select" id="g">
+        <option value="genshin">原神</option>
+        <option value="starrail">星穹铁道</option>
+        <option value="mingchao">鸣潮</option>
+        <option value="juequ">绝区零</option>
+        <option value="warmth">无限暖暖</option>
+        <option value="reverse">重返未来</option>
+        <option value="Arknigs">明日方舟</option>
+        <option value="Arknigs:Endfield">终末地</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label class="form-label" for="s">开始时间</label>
+      <input type="date" class="form-input" id="s">
+    </div>
+    <div class="form-group">
+      <label class="form-label" for="e">结束时间</label>
+      <input type="date" class="form-input" id="e">
+    </div>
+    <div class="form-group">
+      <label class="form-label" for="r">提前几天提醒</label>
+      <select class="form-select" id="r">
+        <option value="1">1天</option>
+        <option value="3">3天</option>
+        <option value="5">5天</option>
+        <option value="7">7天</option>
+      </select>
+    </div>
+    <div class="modal-actions">
+      <button class="modal-btn cancel" onclick="closeMd()">取消</button>
+      <button class="modal-btn confirm" id="modalBtn" onclick="saveOrUpdate()">保存</button>
+    </div>
+  </div>
+</div>
+<script>
+// 全局常量与变量
+const STORAGE_KEY = "game_activity_list";
+const VERIFY_PASSWORD = "1212"; // 可自行修改密码
+const DATA_URL = "data/events.json"; // 本地静态数据，无跨域
+let list = [];
+let filter = "all";
+let asc = true;
+let grid = localStorage.getItem("layout_grid") === "true";
+let isEdit = false;
+let isPasswordVerified = false;
+let lastSearchKeyword = "";
+// 中文名映射（中文→英文标识，适配events.json中文game字段）
+const GAME_NAME_MAP = {
+  "原神": "genshin", "星穹铁道": "starrail", "鸣潮": "mingchao",
+  "绝区零": "juequ", "无限暖暖": "warmth", "重返未来": "reverse",
+  "明日方舟": "Arknigs", "终末地": "Arknigs:Endfield", "重返未来1999": "reverse",
+  "崩坏：星穹铁道": "starrail" // 兼容带前缀的中文名称
+};
+// ========== 核心：无跨域同步官方活动（修复字段匹配+分类颜色） ==========
+async function refreshData() {
+  try {
+    const loadingTip = document.createElement('div');
+    loadingTip.style.position = 'fixed';
+    loadingTip.style.top = '50%';
+    loadingTip.style.left = '50%';
+    loadingTip.style.transform = 'translate(-50%, -50%)';
+    loadingTip.style.padding = '12px 20px';
+    loadingTip.style.background = 'rgba(0,0,0,0.75)';
+    loadingTip.style.color = 'white';
+    loadingTip.style.borderRadius = '12px';
+    loadingTip.style.zIndex = '9999';
+    loadingTip.textContent = '正在同步最新活动...';
+    document.body.appendChild(loadingTip);
+    const response = await fetch(DATA_URL);
+    if (!response.ok) throw new Error("数据文件不存在");
+    const officialEvents = await response.json();
+    
+    // 修复1：转换中文game字段为前端识别的英文标识，同时补全唯一ID
+    const formattedEvents = officialEvents.map(event => {
+      // 中文game名转英文标识，兼容带/不带前缀的名称
+      const gameKey = GAME_NAME_MAP[event.game] || event.game;
+      return {
+        id: Date.now() + Math.floor(Math.random() * 1000), // 补全唯一ID，避免编辑删除异常
+        game: gameKey,
+        name: event.name, // 适配前端name字段，彻底解决undefined
+        start: event.start,
+        end: event.end,
+        remind: event.remind || 1
+      };
+    });
 
-    <!-- 3. 活动卡片容器 -->
-    <div class="event-container" id="event-container"></div>
-
-    <!-- 4. 添加活动按钮（极简宽按钮） -->
-    <button class="add-event-btn">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <line x1="12" y1="5" x2="12" y2="19"></line>
-            <line x1="5" y1="12" x2="19" y2="12"></line>
-        </svg>
-        添加活动
-    </button>
-
-    <script>
-        // 全局变量 & 游戏样式映射
-        let allEvents = [];
-        const gameStyleMap = {
-            "原神": "genshin",
-            "星穹铁道": "hsr",
-            "明日方舟": "arknights",
-            "鸣潮": "other",
-            "绝区零": "other",
-            "无限暖暖": "other",
-            "重返未来": "other",
-            "终末地": "other"
-        };
-
-        // 初始化
-        window.onload = () => {
-            loadEvents();
-            bindFilterTabs();
-            bindFuncBtns();
-        };
-
-        // 加载数据（合并本地+同步数据，去重）
-        function loadEvents() {
-            const localEvents = JSON.parse(localStorage.getItem('gameEvents') || '[]');
-            
-            fetch('data/events.json')
-                .then(res => res.json())
-                .then(syncEvents => {
-                    const mergedEvents = mergeAndDeduplicate(localEvents, syncEvents);
-                    allEvents = mergedEvents;
-                    renderEvents(allEvents);
-                    localStorage.setItem('gameEvents', JSON.stringify(mergedEvents));
-                })
-                .catch(err => {
-                    console.error('加载同步数据失败：', err);
-                    allEvents = localEvents;
-                    renderEvents(allEvents);
-                });
-        }
-
-        // 数据去重（按游戏+活动名唯一标识）
-        function mergeAndDeduplicate(arr1, arr2) {
-            const map = new Map();
-            [...arr1, ...arr2].forEach(event => {
-                const key = `${event.game || ''}-${event.name || ''}`;
-                if (key) map.set(key, event);
-            });
-            return Array.from(map.values());
-        }
-
-        // 渲染活动卡片（极简模板）
-        function renderEvents(events) {
-            const container = document.getElementById('event-container');
-            container.innerHTML = '';
-
-            if (events.length === 0) {
-                container.innerHTML = `
-                    <div class="empty-tip">
-                        暂无活动数据<br>点击「添加活动」创建或「同步」获取最新数据
-                    </div>
-                `;
-                return;
-            }
-
-            events.forEach(event => {
-                const styleClass = gameStyleMap[event.game] || 'other';
-                const cardHtml = `
-                    <div class="event-card ${styleClass}">
-                        <div class="event-game">${event.game || '未知游戏'}</div>
-                        <div class="event-title">${event.name || '未命名活动'}</div>
-                        <div class="event-meta">
-                            <div class="event-meta-item">
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                    <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
-                                    <line x1="16" y1="2" x2="16" y2="6"></line>
-                                    <line x1="8" y1="2" x2="8" y2="6"></line>
-                                    <line x1="3" y1="10" x2="21" y2="10"></line>
-                                </svg>
-                                开始：${event.start || '未设置'}
-                            </div>
-                            <div class="event-meta-item">
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                    <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
-                                    <line x1="16" y1="2" x2="16" y2="6"></line>
-                                    <line x1="8" y1="2" x2="8" y2="6"></line>
-                                    <line x1="3" y1="10" x2="21" y2="10"></line>
-                                </svg>
-                                结束：${event.end || '未设置'}
-                            </div>
-                            <div class="event-meta-item remind">
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                    <circle cx="12" cy="12" r="10"></circle>
-                                    <line x1="12" y1="8" x2="12" y2="12"></line>
-                                    <line x1="12" y1="16" x2="12.01" y2="16"></line>
-                                </svg>
-                                提前${event.remind || 1}天提醒
-                            </div>
-                        </div>
-                        <div class="event-actions">
-                            <a href="javascript:editEvent('${event.game}-${event.name}')">修改</a>
-                            <a href="javascript:deleteEvent('${event.game}-${event.name}')">删除</a>
-                        </div>
-                    </div>
-                `;
-                container.innerHTML += cardHtml;
-            });
-        }
-
-        // 绑定分类筛选
-        function bindFilterTabs() {
-            const tabs = document.querySelectorAll('.filter-tab');
-            tabs.forEach(tab => {
-                tab.addEventListener('click', () => {
-                    tabs.forEach(t => t.classList.remove('active'));
-                    tab.classList.add('active');
-                    
-                    const category = tab.dataset.category;
-                    const filteredEvents = category === '全部' 
-                        ? allEvents 
-                        : allEvents.filter(event => event.game === category);
-                    
-                    renderEvents(filteredEvents);
-                });
-            });
-        }
-
-        // 绑定功能按钮（布局/同步/排序/搜索/导出）
-        function bindFuncBtns() {
-            // 布局切换（卡片/列表）
-            let isCardLayout = true;
-            const layoutBtn = document.getElementById('layout-btn');
-            const container = document.getElementById('event-container');
-            
-            layoutBtn.addEventListener('click', () => {
-                isCardLayout = !isCardLayout;
-                container.style.gridTemplateColumns = isCardLayout 
-                    ? 'repeat(auto-fill, minmax(260px, 1fr))' 
-                    : '1fr';
-                
-                layoutBtn.innerHTML = isCardLayout 
-                    ? `
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <rect x="3" y="3" width="7" height="7"></rect>
-                            <rect x="14" y="3" width="7" height="7"></rect>
-                            <rect x="14" y="14" width="7" height="7"></rect>
-                            <rect x="3" y="14" width="7" height="7"></rect>
-                        </svg>
-                        布局
-                      ` 
-                    : `
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <line x1="4" y1="6" x2="20" y2="6"></line>
-                            <line x1="4" y1="12" x2="20" y2="12"></line>
-                            <line x1="4" y1="18" x2="20" y2="18"></line>
-                        </svg>
-                        布局
-                      `;
-            });
-
-            // 同步按钮
-            const syncBtn = document.getElementById('sync-btn');
-            syncBtn.addEventListener('click', () => {
-                syncBtn.innerHTML = `
-                    <svg class="animate-spin" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <path d="M21 12a9 9 0 0 1-9 9"></path>
-                        <path d="M21 12a9 9 0 0 0-9-9"></path>
-                        <path d="M3 12a9 9 0 0 1 9-9"></path>
-                        <path d="M3 12a9 9 0 0 0 9 9"></path>
-                    </svg>
-                    同步中...
-                `;
-                loadEvents();
-                setTimeout(() => {
-                    syncBtn.innerHTML = `
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <path d="M21 12a9 9 0 0 1-9 9"></path>
-                            <path d="M21 12a9 9 0 0 0-9-9"></path>
-                            <path d="M3 12a9 9 0 0 1 9-9"></path>
-                            <path d="M3 12a9 9 0 0 0 9 9"></path>
-                        </svg>
-                        同步
-                    `;
-                    alert('同步完成！');
-                }, 1000);
-            });
-
-            // 排序按钮
-            let isAsc = true;
-            const sortBtn = document.getElementById('sort-btn');
-            sortBtn.addEventListener('click', () => {
-                isAsc = !isAsc;
-                allEvents.sort((a, b) => {
-                    const timeA = new Date(a.start || '1970-01-01');
-                    const timeB = new Date(b.start || '1970-01-01');
-                    return isAsc ? timeA - timeB : timeB - timeA;
-                });
-                sortBtn.innerHTML = `
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
-                        <polyline points="9 22 9 12 15 12 15 22"></polyline>
-                    </svg>
-                    按时间 ${isAsc ? '↓' : '↑'}
-                `;
-                renderEvents(allEvents);
-            });
-
-            // 搜索按钮
-            document.getElementById('search-btn').addEventListener('click', () => {
-                const keyword = prompt('请输入活动名称/游戏名搜索：');
-                if (!keyword) return;
-                const filteredEvents = allEvents.filter(event => 
-                    (event.game || '').includes(keyword) || (event.name || '').includes(keyword)
-                );
-                renderEvents(filteredEvents);
-            });
-
-            // 导出按钮
-            document.getElementById('export-btn').addEventListener('click', () => {
-                const blob = new Blob([JSON.stringify(allEvents, null, 2)], { type: 'application/json' });
-                const a = document.createElement('a');
-                a.href = URL.createObjectURL(blob);
-                a.download = `游戏活动日历_${new Date().toLocaleDateString()}.json`;
-                a.click();
-                URL.revokeObjectURL(a.href);
-            });
-        }
-
-        // 编辑/删除辅助函数
-        function editEvent(key) {
-            alert(`暂未实现修改功能，待开发（目标活动：${key}）`);
-        }
-
-        function deleteEvent(key) {
-            if (confirm(`确定删除活动：${key}？`)) {
-                allEvents = allEvents.filter(event => `${event.game}-${event.name}` !== key);
-                localStorage.setItem('gameEvents', JSON.stringify(allEvents));
-                renderEvents(allEvents);
-            }
-        }
-    </script>
+    // 合并去重（修复匹配逻辑）
+    const newEvents = formattedEvents.filter(newEvent => {
+      return !list.some(oldEvent => oldEvent.name === newEvent.name && oldEvent.game === newEvent.game);
+    });
+    document.body.removeChild(loadingTip);
+    if (newEvents.length === 0) {
+      alert("✅ 已是最新活动，无需更新！");
+      return;
+    }
+    list = [...list, ...newEvents];
+    saveData();
+    render();
+    alert(`✅ 同步成功！新增${newEvents.length}条官方活动`);
+  } catch (e) {
+    const loadingTip = document.querySelector('div[style*="position:fixed"]');
+    if (loadingTip) document.body.removeChild(loadingTip);
+    console.error("同步失败：", e);
+    alert("⚠️ 同步失败，使用本地缓存数据\n（首次部署请先手动运行Actions生成数据）");
+  }
+}
+// ========== 日期格式化 ==========
+function fmt(d) {
+  const t = new Date(d);
+  return `${t.getFullYear()}/${String(t.getMonth()+1).padStart(2,0)}/${String(t.getDate()).padStart(2,0)}`;
+}
+function left(end) {
+  const now = new Date();
+  now.setHours(0,0,0,0);
+  const ed = new Date(end);
+  ed.setHours(0,0,0,0);
+  return Math.ceil((ed - now) / 86400000);
+}
+// ========== 本地数据存储 ==========
+function loadData() {
+  try {
+    const storedData = localStorage.getItem(STORAGE_KEY);
+    list = storedData ? JSON.parse(storedData) : [];
+  } catch (e) {
+    list = [];
+    console.error("数据读取失败：", e);
+  }
+}
+function saveData() {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(list));
+  } catch (e) {
+    alert("❌ 数据保存失败：" + e.message);
+  }
+}
+// ========== 卡片渲染（修复颜色显示） ==========
+function render() {
+  const el = document.getElementById("cardList");
+  el.innerHTML = "";
+  let arr = [...list];
+  // 筛选+排序
+  if (filter !== "all") arr = arr.filter(i => i.game === filter);
+  arr.sort((a, b) => asc ? new Date(a.end) - new Date(b.end) : new Date(b.end) - new Date(a.end));
+  // 渲染卡片
+  arr.forEach(item => {
+    const l = left(item.end);
+    const ex = l < 0;
+    const cn = ex ? "card expired " + (grid ? "grid-item" : "") : "card " + (grid ? "grid-item" : "");
+    
+    const actionHtml = ex ? `
+      <div class="card-actions-wrap">
+        <span style="color:#86868b;font-size:12px">已过期</span>
+        <div class="card-opt-group">
+          <span class="card-edit" onclick="edit(${item.id})">修改</span>
+          <span class="card-del" onclick="del(${item.id})">删除</span>
+        </div>
+      </div>
+    ` : `
+      <div class="card-actions-wrap">
+        <div class="card-remind" onclick="setRemind(${item.id})">⏰ 提前${item.remind||1}天提醒</div>
+        <div class="card-opt-group">
+          <span class="card-edit" onclick="edit(${item.id})">修改</span>
+          <span class="card-del" onclick="del(${item.id})">删除</span>
+        </div>
+      </div>
+    `;
+    // 到期状态标签
+    let expireHtml = '';
+    if (ex) {
+      expireHtml = '<span class="card-expire">已过期</span>';
+    } else if (l <= 3) {
+      expireHtml = `<span class="card-expire soon">剩${l}天</span>`;
+    } else if (l <= 7) {
+      expireHtml = `<span class="card-expire">剩${l}天</span>`;
+    }
+    // 修复2：game字段为英文标识，匹配css颜色class
+    const html = `
+      <span class="card-game-tag ${item.game}">${gn(item.game)}</span>
+      ${expireHtml}
+      <div class="card-title">${item.name}</div>
+      <div class="card-row"><span class="calendar-icon">📅</span><span class="card-label">开始</span><span class="date-value">${fmt(item.start)}</span></div>
+      <div class="card-row"><span class="calendar-icon">📅</span><span class="card-label">结束</span><span class="date-value">${fmt(item.end)}</span></div>
+      ${actionHtml}
+    `;
+    const div = document.createElement("div");
+    div.className = cn;
+    div.dataset.id = item.id;
+    div.innerHTML = html;
+    el.appendChild(div);
+  });
+  // 布局适配
+  const cardList = document.getElementById("cardList");
+  if (grid) {
+    cardList.classList.add("grid-layout");
+    cardList.classList.remove("single-layout");
+  } else {
+    cardList.classList.remove("grid-layout");
+    cardList.classList.add("single-layout");
+  }
+  if (lastSearchKeyword) highlightSearchResults(lastSearchKeyword);
+}
+// ========== 工具函数 ==========
+function gn(g) {
+  const m = {
+    genshin:"原神",starrail:"星穹铁道",mingchao:"鸣潮",juequ:"绝区零",
+    warmth:"无限暖暖",reverse:"重返未来",Arknigs:"明日方舟",
+    "Arknigs:Endfield":"终末地"
+  };
+  return m[g] || g;
+}
+function f(g) {
+  filter = g;
+  document.querySelectorAll(".filter-btn").forEach(b => b.classList.remove("active"));
+  event.target.classList.add("active");
+  render();
+}
+function toggleSort() {
+  asc = !asc;
+  document.querySelector(".sort-btn").innerText = "按时间 " + (asc ? "↓" : "↑");
+  render();
+}
+function toggleLayout() {
+  grid = !grid;
+  localStorage.setItem("layout_grid", grid);
+  render();
+  const tip = document.createElement('div');
+  tip.style.position = 'fixed';
+  tip.style.top = '50%';
+  tip.style.left = '50%';
+  tip.style.transform = 'translate(-50%, -50%)';
+  tip.style.padding = '8px 16px';
+  tip.style.background = 'rgba(0,0,0,0.75)';
+  tip.style.color = 'white';
+  tip.style.borderRadius = '8px';
+  tip.style.zIndex = '9999';
+  tip.style.fontSize = '14px';
+  tip.textContent = grid ? "已切换为网格布局" : "已切换为单列布局";
+  document.body.appendChild(tip);
+  setTimeout(() => document.body.removeChild(tip), 1500);
+}
+function del(id) {
+  if (!confirm("确定删除该活动？")) return;
+  list = list.filter(item => item.id !== id);
+  saveData();
+  render();
+}
+function edit(id) {
+  isEdit = true;
+  const item = list.find(i => i.id === id);
+  document.getElementById("editId").value = id;
+  document.getElementById("n").value = item.name;
+  document.getElementById("g").value = item.game;
+  document.getElementById("s").value = item.start;
+  document.getElementById("e").value = item.end;
+  document.getElementById("r").value = item.remind || 1;
+  document.getElementById("modalTitle").innerText = "修改活动";
+  document.getElementById("modalBtn").innerText = "修改";
+  document.getElementById("md").style.display = "flex";
+}
+function openModal() {
+  isEdit = false;
+  document.getElementById("editId").value = "";
+  document.getElementById("n").value = "";
+  document.getElementById("g").value = "genshin";
+  document.getElementById("s").value = "";
+  document.getElementById("e").value = "";
+  document.getElementById("r").value = 1;
+  document.getElementById("modalTitle").innerText = "添加活动";
+  document.getElementById("modalBtn").innerText = "保存";
+  document.getElementById("md").style.display = "flex";
+}
+function saveOrUpdate() {
+  const id = document.getElementById("editId").value;
+  const name = document.getElementById("n").value.trim();
+  const game = document.getElementById("g").value;
+  const start = document.getElementById("s").value;
+  const end = document.getElementById("e").value;
+  const remind = Number(document.getElementById("r").value);
+  if (!name || !start || !end) return alert("请填写完整的活动信息！");
+  if (isEdit) {
+    const idx = list.findIndex(i => i.id == id);
+    list[idx] = {...list[idx], name, game, start, end, remind};
+  } else {
+    list.push({id: Date.now(), name, game, start, end, remind});
+  }
+  saveData();
+  closeMd();
+  render();
+}
+function closeMd() {
+  document.getElementById("md").style.display = "none";
+}
+function setRemind(id) {
+  const item = list.find(i => i.id === id);
+  const d = prompt("提前几天提醒？", item.remind || 1);
+  if (!d || isNaN(d)) return;
+  item.remind = Number(d);
+  saveData();
+  render();
+  alert("✅ 提醒设置成功！");
+}
+function highlightSearchResults(keyword) {
+  const allCards = document.querySelectorAll('.card');
+  let hasMatch = false;
+  allCards.forEach(card => {
+    const item = list.find(i => i.id == card.dataset.id);
+    const isMatch = item.name.includes(keyword) || gn(item.game).includes(keyword);
+    if (isMatch) {
+      card.classList.add('highlight');
+      card.classList.remove('faded');
+      hasMatch = true;
+    } else {
+      card.classList.remove('highlight');
+      card.classList.add('faded');
+    }
+  });
+  document.getElementById('resetSearchBtn').style.display = hasMatch ? 'block' : 'none';
+  if (!hasMatch) alert("❌ 未找到匹配的活动");
+}
+function resetSearch() {
+  document.querySelectorAll('.card').forEach(card => card.classList.remove('highlight', 'faded'));
+  lastSearchKeyword = "";
+  document.getElementById('resetSearchBtn').style.display = 'none';
+}
+function search() {
+  const keyword = prompt("请输入活动名/游戏名搜索：");
+  if (!keyword) return;
+  lastSearchKeyword = keyword.trim();
+  highlightSearchResults(lastSearchKeyword);
+}
+function testRemind() {
+  alert("✅ 本地提醒功能已启用，活动到期前会自动提醒！");
+}
+function exportData() {
+  try {
+    const dataStr = JSON.stringify(list, null, 2);
+    const dataBlob = new Blob([dataStr], { type: 'application/json' });
+    const url = URL.createObjectURL(dataBlob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `游戏活动数据_${new Date().toLocaleDateString().replace(/\//g, '-')}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+    alert("✅ 数据导出成功！");
+  } catch (e) {
+    alert("❌ 导出失败：" + e.message);
+  }
+}
+// ========== 密码验证逻辑（优化无阻塞） ==========
+function handlePasswordConfirm() {
+  setTimeout(async () => {
+    try {
+      const inputEl = document.getElementById("passwordInput");
+      const errorEl = document.getElementById("passwordError");
+      const inputPwd = inputEl.value.trim();
+      if (!inputPwd) {
+        errorEl.textContent = "⚠️ 请输入密码后再确认！";
+        inputEl.classList.add("error");
+        inputEl.focus();
+        return;
+      }
+      if (inputPwd !== VERIFY_PASSWORD) {
+        errorEl.textContent = "❌ 密码错误！正确密码：1212";
+        inputEl.classList.add("error");
+        inputEl.value = "";
+        inputEl.focus();
+        return;
+      }
+      isPasswordVerified = true;
+      hidePasswordModal();
+      loadData();
+      render();
+      // 自动同步最新活动
+      setTimeout(refreshData, 1000);
+    } catch (e) {
+      console.error("密码验证异常：", e);
+      alert("❌ 验证异常，请刷新页面重试！");
+      hidePasswordModal();
+    }
+  }, 0);
+}
+function showPasswordModal() {
+  document.getElementById("passwordModal").style.display = "flex";
+  const inputEl = document.getElementById("passwordInput");
+  inputEl.focus();
+  inputEl.classList.remove("error");
+  document.getElementById("passwordError").textContent = "";
+}
+function hidePasswordModal() {
+  const modal = document.getElementById("passwordModal");
+  if (modal) modal.style.display = "none";
+  document.getElementById("passwordInput").value = "";
+}
+// ========== PWA注册（OPPO桌面卡片必需） ==========
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('service-worker.js')
+      .then(registration => console.log('PWA ServiceWorker 注册成功', registration.scope))
+      .catch(err => console.log('ServiceWorker 注册失败', err));
+  });
+}
+// ========== 页面初始化 ==========
+window.onload = () => {
+  setTimeout(() => {
+    try {
+      document.getElementById("confirmBtn").addEventListener("click", handlePasswordConfirm);
+      document.getElementById("cancelBtn").addEventListener("click", () => {
+        alert("❌ 未输入密码，无法访问页面！");
+        location.reload();
+      });
+      
+      const cardList = document.getElementById("cardList");
+      if (grid) {
+        cardList.classList.add("grid-layout");
+      } else {
+        cardList.classList.add("single-layout");
+      }
+      
+      showPasswordModal();
+    } catch (e) {
+      console.error("初始化失败：", e);
+      alert("❌ 页面加载异常，请刷新重试！");
+      showPasswordModal();
+    }
+  }, 100);
+};
+// 屏幕旋转适配
+window.addEventListener('resize', () => {
+  if (isPasswordVerified) render();
+});
+</script>
 </body>
 </html>
