@@ -2,158 +2,358 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no"> <!-- 禁止缩放，适配移动端 -->
-    <meta name="apple-mobile-web-app-capable" content="yes"> <!-- 适配移动端全屏 -->
-    <meta name="mobile-web-app-capable" content="yes"> <!-- OPPO系统卡片核心标识 -->
-    <meta name="theme-color" content="#2196F3"> <!-- 匹配manifest的主题色 -->
-    <!-- 引入manifest.json（关键：让OPPO识别为可添加桌面的应用） -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="theme-color" content="#2196F3">
     <link rel="manifest" href="/manifest.json">
     <title>游戏活动日历</title>
     <style>
-        /* 基础样式 */
-        body {
-            font-family: "Microsoft YaHei", sans-serif;
-            margin: 0; /* 移除默认边距，适配移动端 */
-            padding: 16px;
-            background-color: #f5f5f5;
+        /* 全局样式重置 */
+        * {
+            margin: 0;
+            padding: 0;
             box-sizing: border-box;
+            font-family: "Microsoft YaHei", sans-serif;
         }
-        .category-tabs {
-            margin-bottom: 16px;
-            overflow-x: auto; /* 分类标签横向滚动，适配小屏 */
-            white-space: nowrap;
-            padding-bottom: 8px;
+        body {
+            background-color: #f8f9fa;
+            padding: 20px;
         }
-        .category-tab {
-            display: inline-block;
-            padding: 6px 12px;
-            margin-right: 8px;
-            border: none;
+        /* 顶部筛选栏 */
+        .filter-bar {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin-bottom: 20px;
+            align-items: center;
+        }
+        .filter-tab {
+            padding: 8px 16px;
             border-radius: 20px;
-            background-color: #e0e0e0;
+            border: none;
+            background-color: #e9ecef;
+            color: #495057;
             cursor: pointer;
             font-size: 14px;
-            white-space: nowrap;
+            transition: all 0.2s;
         }
-        .category-tab.active {
-            background-color: #2196F3;
+        .filter-tab.active {
+            background-color: #007bff;
             color: white;
         }
+        .filter-tab:hover {
+            background-color: #dee2e6;
+        }
+        /* 功能按钮栏（布局/同步/排序/搜索/导出） */
+        .func-bar {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin-bottom: 20px;
+            align-items: center;
+        }
+        .func-btn {
+            padding: 8px 16px;
+            border-radius: 4px;
+            border: 1px solid #ced4da;
+            background-color: white;
+            color: #495057;
+            cursor: pointer;
+            font-size: 14px;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        .func-btn:hover {
+            background-color: #e9ecef;
+        }
+        .func-btn.primary {
+            background-color: #007bff;
+            color: white;
+            border-color: #007bff;
+        }
+        .func-btn.primary:hover {
+            background-color: #0069d9;
+        }
+        /* 活动卡片容器 */
+        .event-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        /* 活动卡片样式 */
         .event-card {
-            display: block; /* 移动端改为纵向排列 */
-            width: 100%; /* 占满屏幕宽度 */
-            padding: 16px;
-            margin: 8px 0; /* 纵向间距 */
             background-color: white;
             border-radius: 8px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-            border-left: 4px solid #ffffff;
-            box-sizing: border-box;
+            padding: 16px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+            border-left: 4px solid #007bff;
+            position: relative;
         }
+        /* 不同游戏的卡片左侧颜色 */
+        .event-card.genshin {
+            border-left-color: #28a745; /* 原神-绿色 */
+        }
+        .event-card.hsr {
+            border-left-color: #007bff; /* 星穹铁道-蓝色 */
+        }
+        .event-card.arknights {
+            border-left-color: #fd7e14; /* 明日方舟-橙色 */
+        }
+        .event-card.other {
+            border-left-color: #6c757d; /* 其他游戏-灰色 */
+        }
+        /* 卡片内样式 */
         .event-game {
             font-size: 16px;
-            font-weight: bold;
+            font-weight: 600;
             margin-bottom: 8px;
+            color: #212529;
         }
-        .event-name {
+        .event-title {
             font-size: 14px;
-            color: #333;
+            color: #495057;
             margin-bottom: 12px;
         }
         .event-time {
             font-size: 12px;
-            color: #666;
-            margin-bottom: 8px;
+            color: #6c757d;
+            margin-bottom: 6px;
+            display: flex;
+            align-items: center;
+            gap: 5px;
         }
         .event-remind {
             font-size: 12px;
-            color: #ff5722;
-            margin-bottom: 8px;
+            color: #dc3545;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 5px;
         }
         .event-actions {
+            display: flex;
+            gap: 10px;
             font-size: 12px;
         }
         .event-actions a {
-            color: #2196F3;
+            color: #007bff;
             text-decoration: none;
-            margin-right: 12px;
         }
-        .add-btn {
-            margin-top: 16px;
-            padding: 10px 20px;
-            background-color: #2196F3;
-            color: white;
+        .event-actions a:hover {
+            text-decoration: underline;
+        }
+        /* 添加活动按钮 */
+        .add-event-btn {
+            width: 100%;
+            padding: 12px;
+            border-radius: 8px;
             border: none;
-            border-radius: 4px;
+            background-color: #007bff;
+            color: white;
+            font-size: 16px;
             cursor: pointer;
-            width: 100%; /* 按钮占满宽度 */
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+        .add-event-btn:hover {
+            background-color: #0069d9;
+        }
+        /* 响应式适配 */
+        @media (max-width: 768px) {
+            .event-container {
+                grid-template-columns: 1fr;
+            }
+            .func-bar {
+                justify-content: center;
+            }
+            .filter-bar {
+                justify-content: center;
+            }
         }
     </style>
 </head>
 <body>
-    <!-- 分类标签 -->
-    <div class="category-tabs">
-        <button class="category-tab active" data-category="全部">全部</button>
-        <button class="category-tab" data-category="原神">原神</button>
-        <button class="category-tab" data-category="星穹铁道">星穹铁道</button>
-        <button class="category-tab" data-category="鸣潮">鸣潮</button>
-        <button class="category-tab" data-category="绝区零">绝区零</button>
-        <button class="category-tab" data-category="无限暖暖">无限暖暖</button>
-        <button class="category-tab" data-category="重返未来">重返未来</button>
-        <button class="category-tab" data-category="明日方舟">明日方舟</button>
-        <button class="category-tab" data-category="终末地">终末地</button>
+    <!-- 1. 顶部筛选标签 -->
+    <div class="filter-bar">
+        <button class="filter-tab active" data-category="全部">全部</button>
+        <button class="filter-tab" data-category="原神">原神</button>
+        <button class="filter-tab" data-category="星穹铁道">星穹铁道</button>
+        <button class="filter-tab" data-category="鸣潮">鸣潮</button>
+        <button class="filter-tab" data-category="绝区零">绝区零</button>
+        <button class="filter-tab" data-category="无限暖暖">无限暖暖</button>
+        <button class="filter-tab" data-category="重返未来">重返未来</button>
+        <button class="filter-tab" data-category="明日方舟">明日方舟</button>
+        <button class="filter-tab" data-category="终末地">终末地</button>
     </div>
 
-    <!-- 活动卡片容器 -->
-    <div id="event-container"></div>
+    <!-- 2. 功能按钮栏（恢复布局/同步/排序/搜索/导出） -->
+    <div class="func-bar">
+        <button class="func-btn" id="layout-btn">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="3" y="3" width="7" height="7"></rect>
+                <rect x="14" y="3" width="7" height="7"></rect>
+                <rect x="14" y="14" width="7" height="7"></rect>
+                <rect x="3" y="14" width="7" height="7"></rect>
+            </svg>
+            布局
+        </button>
+        <button class="func-btn primary" id="sync-btn">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M21 12a9 9 0 0 1-9 9"></path>
+                <path d="M21 12a9 9 0 0 0-9-9"></path>
+                <path d="M3 12a9 9 0 0 1 9-9"></path>
+                <path d="M3 12a9 9 0 0 0 9 9"></path>
+            </svg>
+            同步
+        </button>
+        <button class="func-btn" id="sort-btn">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+                <polyline points="9 22 9 12 15 12 15 22"></polyline>
+            </svg>
+            按时间 ↓
+        </button>
+        <button class="func-btn" id="search-btn">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="11" cy="11" r="8"></circle>
+                <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+            </svg>
+            搜索
+        </button>
+        <button class="func-btn" id="export-btn">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                <polyline points="7 10 12 15 17 10"></polyline>
+                <line x1="12" y1="15" x2="12" y2="3"></line>
+            </svg>
+            导出
+        </button>
+    </div>
 
-    <!-- 添加活动按钮 -->
-    <button class="add-btn">+ 添加活动</button>
+    <!-- 3. 活动卡片容器 -->
+    <div class="event-container" id="event-container"></div>
+
+    <!-- 4. 添加活动按钮 -->
+    <button class="add-event-btn">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="12" y1="5" x2="12" y2="19"></line>
+            <line x1="5" y1="12" x2="19" y2="12"></line>
+        </svg>
+        + 添加活动
+    </button>
 
     <script>
-        // 1. 游戏分类颜色配置
-        const gameConfig = {
-            "原神": "#00C853",
-            "星穹铁道": "#3F51B5",
-            "明日方舟": "#FF9800",
-            "鸣潮": "#9C27B0",
-            "绝区零": "#F44336",
-            "无限暖暖": "#FFCDD2",
-            "重返未来": "#607D8B",
-            "终末地": "#795548"
+        // 全局变量：存储所有活动数据
+        let allEvents = [];
+        // 游戏颜色/类名映射（适配卡片样式）
+        const gameStyleMap = {
+            "原神": "genshin",
+            "星穹铁道": "hsr",
+            "明日方舟": "arknights",
+            "鸣潮": "other",
+            "绝区零": "other",
+            "无限暖暖": "other",
+            "重返未来": "other",
+            "终末地": "other"
         };
 
-        // 2. 加载events.json数据
-        let allEvents = [];
-        fetch('data/events.json')
-            .then(response => response.json())
-            .then(data => {
-                allEvents = data;
-                renderEvents(allEvents);
-                bindCategoryTabs();
-            })
-            .catch(error => {
-                console.error("加载活动数据失败：", error);
-                alert("同步失败，使用本地缓存数据（首次部署请先手动运行Actions生成数据）");
-            });
+        // 1. 初始化：加载数据+绑定事件
+        window.onload = function() {
+            loadEvents(); // 加载同步数据+本地数据
+            bindFilterTabs(); // 绑定分类筛选
+            bindFuncBtns(); // 绑定功能按钮（布局/同步/排序等）
+        };
 
-        // 3. 渲染活动卡片（带颜色）
+        // 2. 加载数据（合并同步数据+本地存储数据）
+        function loadEvents() {
+            // 先加载本地存储的历史活动
+            const localEvents = JSON.parse(localStorage.getItem('gameEvents') || '[]');
+            // 再加载events.json的同步数据
+            fetch('data/events.json')
+                .then(res => res.json())
+                .then(syncEvents => {
+                    // 合并数据（去重：以name+game为唯一标识）
+                    const mergedEvents = mergeAndDeduplicate(localEvents, syncEvents);
+                    allEvents = mergedEvents;
+                    renderEvents(allEvents); // 渲染所有活动
+                    // 保存合并后的数据到本地（恢复历史活动）
+                    localStorage.setItem('gameEvents', JSON.stringify(mergedEvents));
+                })
+                .catch(err => {
+                    console.error('加载同步数据失败：', err);
+                    allEvents = localEvents;
+                    renderEvents(allEvents);
+                });
+        }
+
+        // 3. 数据去重（避免重复显示）
+        function mergeAndDeduplicate(arr1, arr2) {
+            const map = new Map();
+            // 先加本地数据
+            arr1.forEach(event => {
+                const key = `${event.game}-${event.name}`;
+                map.set(key, event);
+            });
+            // 再加同步数据（覆盖重复项）
+            arr2.forEach(event => {
+                const key = `${event.game}-${event.name}`;
+                map.set(key, event);
+            });
+            return Array.from(map.values());
+        }
+
+        // 4. 渲染活动卡片（美化样式+区分游戏颜色）
         function renderEvents(events) {
             const container = document.getElementById('event-container');
             container.innerHTML = '';
-            
+
+            if (events.length === 0) {
+                container.innerHTML = '<div style="grid-column: 1/-1; text-align: center; padding: 40px; color: #6c757d;">暂无活动数据，点击"添加活动"创建或点击"同步"获取最新数据</div>';
+                return;
+            }
+
             events.forEach(event => {
-                const cardColor = gameConfig[event.game] || "#ffffff";
+                // 获取游戏对应的样式类名
+                const styleClass = gameStyleMap[event.game] || 'other';
+                // 拼接卡片HTML
                 const cardHtml = `
-                    <div class="event-card" style="border-left-color: ${cardColor}">
-                        <div class="event-game">${event.game}</div>
-                        <div class="event-name">${event.name || '未命名活动'}</div>
-                        <div class="event-time">📅 开始 ${event.start}</div>
-                        <div class="event-time">📅 结束 ${event.end}</div>
-                        <div class="event-remind">🔔 提前${event.remind}天提醒</div>
+                    <div class="event-card ${styleClass}">
+                        <div class="event-game">${event.game || '未知游戏'}</div>
+                        <div class="event-title">${event.name || '未命名活动'}</div>
+                        <div class="event-time">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+                                <line x1="16" y1="2" x2="16" y2="6"></line>
+                                <line x1="8" y1="2" x2="8" y2="6"></line>
+                                <line x1="3" y1="10" x2="21" y2="10"></line>
+                            </svg>
+                            开始：${event.start || '未设置'}
+                        </div>
+                        <div class="event-time">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+                                <line x1="16" y1="2" x2="16" y2="6"></line>
+                                <line x1="8" y1="2" x2="8" y2="6"></line>
+                                <line x1="3" y1="10" x2="21" y2="10"></line>
+                            </svg>
+                            结束：${event.end || '未设置'}
+                        </div>
+                        <div class="event-remind">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <circle cx="12" cy="12" r="10"></circle>
+                                <line x1="12" y1="8" x2="12" y2="12"></line>
+                                <line x1="12" y1="16" x2="12.01" y2="16"></line>
+                            </svg>
+                            提前${event.remind || 1}天提醒
+                        </div>
                         <div class="event-actions">
-                            <a href="javascript:;">修改</a>
-                            <a href="javascript:;">删除</a>
+                            <a href="javascript:editEvent('${event.game}-${event.name}')">修改</a>
+                            <a href="javascript:deleteEvent('${event.game}-${event.name}')">删除</a>
                         </div>
                     </div>
                 `;
@@ -161,13 +361,15 @@
             });
         }
 
-        // 4. 绑定分类标签筛选事件
-        function bindCategoryTabs() {
-            const tabs = document.querySelectorAll('.category-tab');
+        // 5. 绑定分类筛选标签
+        function bindFilterTabs() {
+            const tabs = document.querySelectorAll('.filter-tab');
             tabs.forEach(tab => {
                 tab.addEventListener('click', () => {
+                    // 切换激活状态
                     tabs.forEach(t => t.classList.remove('active'));
                     tab.classList.add('active');
+                    // 筛选数据
                     const category = tab.dataset.category;
                     let filteredEvents = allEvents;
                     if (category !== '全部') {
@@ -177,6 +379,116 @@
                 });
             });
         }
+
+        // 6. 绑定功能按钮（布局/同步/排序/搜索/导出）
+        function bindFuncBtns() {
+            // 布局切换（卡片/列表）
+            let isCardLayout = true;
+            document.getElementById('layout-btn').addEventListener('click', function() {
+                const container = document.getElementById('event-container');
+                isCardLayout = !isCardLayout;
+                if (isCardLayout) {
+                    container.style.gridTemplateColumns = 'repeat(auto-fill, minmax(280px, 1fr))';
+                    this.innerHTML = `
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <rect x="3" y="3" width="7" height="7"></rect>
+                            <rect x="14" y="3" width="7" height="7"></rect>
+                            <rect x="14" y="14" width="7" height="7"></rect>
+                            <rect x="3" y="14" width="7" height="7"></rect>
+                        </svg>
+                        布局
+                    `;
+                } else {
+                    container.style.gridTemplateColumns = '1fr';
+                    this.innerHTML = `
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <line x1="4" y1="6" x2="20" y2="6"></line>
+                            <line x1="4" y1="12" x2="20" y2="12"></line>
+                            <line x1="4" y1="18" x2="20" y2="18"></line>
+                        </svg>
+                        布局
+                    `;
+                }
+            });
+
+            // 同步按钮（重新加载数据）
+            document.getElementById('sync-btn').addEventListener('click', function() {
+                this.innerHTML = `
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="animate-spin">
+                        <path d="M21 12a9 9 0 0 1-9 9"></path>
+                        <path d="M21 12a9 9 0 0 0-9-9"></path>
+                        <path d="M3 12a9 9 0 0 1 9-9"></path>
+                        <path d="M3 12a9 9 0 0 0 9 9"></path>
+                    </svg>
+                    同步中...
+                `;
+                loadEvents(); // 重新加载数据
+                setTimeout(() => {
+                    this.innerHTML = `
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M21 12a9 9 0 0 1-9 9"></path>
+                            <path d="M21 12a9 9 0 0 0-9-9"></path>
+                            <path d="M3 12a9 9 0 0 1 9-9"></path>
+                            <path d="M3 12a9 9 0 0 0 9 9"></path>
+                        </svg>
+                        同步
+                    `;
+                    alert('同步完成！');
+                }, 1000);
+            });
+
+            // 排序按钮（切换时间升序/降序）
+            let isAsc = true;
+            document.getElementById('sort-btn').addEventListener('click', function() {
+                isAsc = !isAsc;
+                // 按开始时间排序
+                allEvents.sort((a, b) => {
+                    const timeA = new Date(a.start || '1970-01-01');
+                    const timeB = new Date(b.start || '1970-01-01');
+                    return isAsc ? timeA - timeB : timeB - timeA;
+                });
+                this.innerHTML = `
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+                        <polyline points="9 22 9 12 15 12 15 22"></polyline>
+                    </svg>
+                    按时间 ${isAsc ? '↓' : '↑'}
+                `;
+                renderEvents(allEvents);
+            });
+
+            // 搜索按钮（简易搜索弹窗）
+            document.getElementById('search-btn').addEventListener('click', function() {
+                const keyword = prompt('请输入活动名称/游戏名搜索：');
+                if (!keyword) return;
+                const filteredEvents = allEvents.filter(event => {
+                    return (event.game || '').includes(keyword) || (event.name || '').includes(keyword);
+                });
+                renderEvents(filteredEvents);
+            });
+
+            // 导出按钮（导出为JSON）
+            document.getElementById('export-btn').addEventListener('click', function() {
+                const blob = new Blob([JSON.stringify(allEvents, null, 2)], { type: 'application/json' });
+                const a = document.createElement('a');
+                a.href = URL.createObjectURL(blob);
+                a.download = `游戏活动日历_${new Date().toLocaleDateString()}.json`;
+                a.click();
+                URL.revokeObjectURL(a.href);
+            });
+        }
+
+        // 7. 辅助函数：修改/删除活动（简易实现）
+        function editEvent(key) {
+            alert(`暂未实现修改功能，待开发（目标活动：${key}）`);
+        }
+        function deleteEvent(key) {
+            if (confirm(`确定删除活动：${key}？`)) {
+                allEvents = allEvents.filter(event => `${event.game}-${event.name}` !== key);
+                localStorage.setItem('gameEvents', JSON.stringify(allEvents));
+                renderEvents(allEvents);
+            }
+        }
     </script>
 </body>
-</html>
+</html>v
