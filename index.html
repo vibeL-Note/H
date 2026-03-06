@@ -27,10 +27,33 @@
     .card-list{display:grid;gap:16px;width:100%;}
     .card-list.single-layout{grid-template-columns:1fr !important;}
     .card-list.grid-layout{grid-template-columns:repeat(auto-fill,minmax(350px,1fr)) !important;gap:20px !important;}
-    .card{background:#fff;border-radius:16px;padding:20px;position:relative;box-shadow:0 2px 8px #000008;transition:all 0.3s ease}
-    .card.highlight{border:2px solid #007aff;background:#f0f8ff;box-shadow:0 0 12px rgba(0, 122, 255, 0.15);}
-    .card.faded{opacity:0.5}
-    .card.expired{opacity:0.45;filter:grayscale(80%)}
+    /* 普通卡片：轻量化阴影 + 细边框 */
+.card {
+  background: #fff;
+  border-radius: 16px;
+  padding: 20px;
+  position: relative;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06); /* 更轻的阴影 */
+  border: 1px solid #f0f0f2; /* 用细边框替代厚重阴影 */
+  transition: all 0.3s ease;
+}
+
+/* 高亮卡片：降低阴影强度 */
+.card.highlight {
+  border: 2px solid #007aff;
+  background: #f0f8ff;
+  box-shadow: 0 1px 6px rgba(0, 122, 255, 0.1); /* 更柔和的高亮阴影 */
+}
+
+/* 已过期卡片：保持灰度，阴影不变 */
+.card.faded {
+  opacity: 0.5;
+}
+
+.card.expired {
+  opacity: 0.45;
+  filter: grayscale(80%);
+}
     .card-expire{position:absolute;right:16px;top:16px;font-size:12px;padding:3px 8px;border-radius:12px;background:#ffebee;color:#d32f2f;font-weight:500}
     .card-expire.soon{background:#fff3e0;color:#f57c00}
     .card-actions-wrap {
