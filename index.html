@@ -2,41 +2,53 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no"> <!-- 禁止缩放，适配移动端 -->
+    <meta name="apple-mobile-web-app-capable" content="yes"> <!-- 适配移动端全屏 -->
+    <meta name="mobile-web-app-capable" content="yes"> <!-- OPPO系统卡片核心标识 -->
+    <meta name="theme-color" content="#2196F3"> <!-- 匹配manifest的主题色 -->
+    <!-- 引入manifest.json（关键：让OPPO识别为可添加桌面的应用） -->
+    <link rel="manifest" href="/manifest.json">
     <title>游戏活动日历</title>
     <style>
         /* 基础样式 */
         body {
             font-family: "Microsoft YaHei", sans-serif;
-            margin: 20px;
+            margin: 0; /* 移除默认边距，适配移动端 */
+            padding: 16px;
             background-color: #f5f5f5;
+            box-sizing: border-box;
         }
         .category-tabs {
-            margin-bottom: 20px;
+            margin-bottom: 16px;
+            overflow-x: auto; /* 分类标签横向滚动，适配小屏 */
+            white-space: nowrap;
+            padding-bottom: 8px;
         }
         .category-tab {
             display: inline-block;
-            padding: 8px 16px;
+            padding: 6px 12px;
             margin-right: 8px;
             border: none;
             border-radius: 20px;
             background-color: #e0e0e0;
             cursor: pointer;
             font-size: 14px;
+            white-space: nowrap;
         }
         .category-tab.active {
             background-color: #2196F3;
             color: white;
         }
         .event-card {
-            display: inline-block;
-            width: 280px;
+            display: block; /* 移动端改为纵向排列 */
+            width: 100%; /* 占满屏幕宽度 */
             padding: 16px;
-            margin: 8px;
+            margin: 8px 0; /* 纵向间距 */
             background-color: white;
             border-radius: 8px;
             box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-            border-left: 4px solid #ffffff; /* 默认白色，后续动态替换 */
+            border-left: 4px solid #ffffff;
+            box-sizing: border-box;
         }
         .event-game {
             font-size: 16px;
@@ -67,13 +79,14 @@
             margin-right: 12px;
         }
         .add-btn {
-            margin-top: 20px;
+            margin-top: 16px;
             padding: 10px 20px;
             background-color: #2196F3;
             color: white;
             border: none;
             border-radius: 4px;
             cursor: pointer;
+            width: 100%; /* 按钮占满宽度 */
         }
     </style>
 </head>
@@ -98,16 +111,16 @@
     <button class="add-btn">+ 添加活动</button>
 
     <script>
-        // 1. 游戏分类颜色配置（核心：与game字段匹配）
+        // 1. 游戏分类颜色配置
         const gameConfig = {
-            "原神": "#00C853",        // 原神-绿色
-            "星穹铁道": "#3F51B5",    // 星穹铁道-蓝色
-            "明日方舟": "#FF9800",    // 明日方舟-橙色
-            "鸣潮": "#9C27B0",        // 鸣潮-紫色
-            "绝区零": "#F44336",      // 绝区零-红色
-            "无限暖暖": "#FFCDD2",    // 无限暖暖-粉色
-            "重返未来": "#607D8B",    // 重返未来-灰色
-            "终末地": "#795548"       // 终末地-棕色
+            "原神": "#00C853",
+            "星穹铁道": "#3F51B5",
+            "明日方舟": "#FF9800",
+            "鸣潮": "#9C27B0",
+            "绝区零": "#F44336",
+            "无限暖暖": "#FFCDD2",
+            "重返未来": "#607D8B",
+            "终末地": "#795548"
         };
 
         // 2. 加载events.json数据
@@ -116,8 +129,8 @@
             .then(response => response.json())
             .then(data => {
                 allEvents = data;
-                renderEvents(allEvents); // 渲染所有活动
-                bindCategoryTabs();      // 绑定分类筛选事件
+                renderEvents(allEvents);
+                bindCategoryTabs();
             })
             .catch(error => {
                 console.error("加载活动数据失败：", error);
@@ -127,13 +140,10 @@
         // 3. 渲染活动卡片（带颜色）
         function renderEvents(events) {
             const container = document.getElementById('event-container');
-            container.innerHTML = ''; // 清空容器
+            container.innerHTML = '';
             
             events.forEach(event => {
-                // 获取对应游戏的颜色，无配置则白色
                 const cardColor = gameConfig[event.game] || "#ffffff";
-                
-                // 拼接卡片HTML
                 const cardHtml = `
                     <div class="event-card" style="border-left-color: ${cardColor}">
                         <div class="event-game">${event.game}</div>
@@ -156,18 +166,13 @@
             const tabs = document.querySelectorAll('.category-tab');
             tabs.forEach(tab => {
                 tab.addEventListener('click', () => {
-                    // 切换标签激活状态
                     tabs.forEach(t => t.classList.remove('active'));
                     tab.classList.add('active');
-                    
-                    // 筛选对应分类的活动
                     const category = tab.dataset.category;
                     let filteredEvents = allEvents;
                     if (category !== '全部') {
                         filteredEvents = allEvents.filter(event => event.game === category);
                     }
-                    
-                    // 重新渲染筛选后的活动
                     renderEvents(filteredEvents);
                 });
             });
