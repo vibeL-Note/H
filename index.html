@@ -23,7 +23,10 @@
     .filter-btn{padding:6px 12px;border-radius:20px;background:#fff;border:1px solid #e5e5e7;font-size:14px;cursor:pointer;transition:all 0.2s ease}
     .filter-btn.active{background:#007aff;color:#fff;border-color:#007aff}
     .sort-btn{margin-left:auto}
-    .card-list{display:grid;grid-template-columns:1fr;gap:16px}
+    /* 核心修复：布局样式强制生效 */
+    .card-list{display:grid;gap:16px;width:100%;}
+    .card-list.single-layout{grid-template-columns:1fr !important;}
+    .card-list.grid-layout{grid-template-columns:repeat(auto-fill,minmax(350px,1fr)) !important;gap:20px !important;}
     .card{background:#fff;border-radius:16px;padding:20px;position:relative;box-shadow:0 2px 8px #000008;transition:all 0.3s ease}
     .card.highlight{border:2px solid #007aff;background:#f0f8ff;box-shadow:0 0 12px rgba(0, 122, 255, 0.15);}
     .card.faded{opacity:0.5}
@@ -85,7 +88,6 @@
     .confirm{background:#007aff;color:#fff}
     /* 电脑端布局适配 */
     @media screen and (min-width:768px) {
-      .card-list{grid-template-columns:repeat(auto-fill,minmax(350px,1fr));gap:20px}
       body{padding:24px 24px 100px}
       .card{padding:24px}
     }
@@ -156,7 +158,7 @@
   <button class="filter-btn" onclick="f('Arknigs:Endfield')">终末地</button>
   <button class="filter-btn sort-btn" onclick="toggleSort()">按时间 ↓</button>
 </div>
-<div class="card-list" id="cardList"></div>
+<div class="card-list single-layout" id="cardList"></div>
 <div class="add-record-btn" onclick="openModal()">
   <span class="add-icon">+</span><span>添加活动</span>
 </div>
@@ -221,7 +223,7 @@ const DATA_URL = "data/events.json"; // 本地静态数据，无跨域
 let list = [];
 let filter = "all";
 let asc = true;
-let grid = localStorage.getItem("layout_grid") === "true";
+let grid = false; // 核心修复：默认单列布局，强制初始化
 let isEdit = false;
 let isPasswordVerified = false;
 let lastSearchKeyword = "";
@@ -369,15 +371,6 @@ function render() {
     div.innerHTML = html;
     el.appendChild(div);
   });
-  // 布局适配
-  const cardList = document.getElementById("cardList");
-  if (grid) {
-    cardList.classList.add("grid-layout");
-    cardList.classList.remove("single-layout");
-  } else {
-    cardList.classList.remove("grid-layout");
-    cardList.classList.add("single-layout");
-  }
   if (lastSearchKeyword) highlightSearchResults(lastSearchKeyword);
 }
 // ========== 工具函数 ==========
@@ -400,16 +393,16 @@ function toggleSort() {
   document.querySelector(".sort-btn").innerText = "按时间 " + (asc ? "↓" : "↑");
   render();
 }
+// 核心修复：布局切换函数（强制样式生效）
 function toggleLayout() {
   grid = !grid;
-  localStorage.setItem("layout_grid", String(grid)); // 强制转字符串，避免类型异常
-  // 强制重置布局样式
   const cardList = document.getElementById("cardList");
-  cardList.className = ""; // 清空原有类名
+  // 强制重置布局类名
+  cardList.classList.remove("single-layout", "grid-layout");
   if (grid) {
-    cardList.classList.add("card-list", "grid-layout");
+    cardList.classList.add("grid-layout");
   } else {
-    cardList.classList.add("card-list", "single-layout");
+    cardList.classList.add("single-layout");
   }
   // 重新渲染卡片，确保样式生效
   render();
@@ -599,14 +592,6 @@ window.onload = () => {
         alert("❌ 未输入密码，无法访问页面！");
         location.reload();
       });
-      
-      const cardList = document.getElementById("cardList");
-      if (grid) {
-        cardList.classList.add("grid-layout");
-      } else {
-        cardList.classList.add("single-layout");
-      }
-      
       showPasswordModal();
     } catch (e) {
       console.error("初始化失败：", e);
