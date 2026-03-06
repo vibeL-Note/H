@@ -402,8 +402,18 @@ function toggleSort() {
 }
 function toggleLayout() {
   grid = !grid;
-  localStorage.setItem("layout_grid", grid);
+  localStorage.setItem("layout_grid", String(grid)); // 强制转字符串，避免类型异常
+  // 强制重置布局样式
+  const cardList = document.getElementById("cardList");
+  cardList.className = ""; // 清空原有类名
+  if (grid) {
+    cardList.classList.add("card-list", "grid-layout");
+  } else {
+    cardList.classList.add("card-list", "single-layout");
+  }
+  // 重新渲染卡片，确保样式生效
   render();
+  // 提示弹窗
   const tip = document.createElement('div');
   tip.style.position = 'fixed';
   tip.style.top = '50%';
