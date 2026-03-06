@@ -16,5 +16,21 @@
       "sizes": "512x512",
       "type": "image/png"
     }
+  ],
+  "widgets": [
+    {
+      "name": "游戏活动小组件",
+      "short_name": "活动卡片",
+      "description": "显示最近的游戏活动",
+      "icons": [{ "src": "https://picsum.photos/128/128", "sizes": "128x128" }],
+      "url": "/widget.html",
+      "type": "html",
+      "sizes": ["2x2", "2x4"],
+      "default_size": "2x2",
+      "background_color": "#f7f8fa",
+      "data": {
+        "api": "/data/events.json"
+      }
+    }
   ]
 }
